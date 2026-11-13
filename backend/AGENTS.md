@@ -49,3 +49,31 @@ pytest tests/ -v
 2. **Zero Secondary Noise in Pull:** Pull research routes must only query primary disclosures. Do not pull news articles or broker reports into the model context.
 3. **Database Concurrency:** Always use SQLite WAL mode (`PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;`) to prevent database lock contention between background workers and API readers.
 4. **No Plaintext Secrets:** Never hardcode VAPID private keys or LLM API keys in code; always pull from `.env` via `pydantic-settings`.
+
+## SEBI LODR Schedule III 17-Category Filing Rubric (P-01)
+Exchange filings are classified into 17 standard SEBI Listing Regulations categories with deterministic materiality scores (1-10):
+
+| Category | Description | Materiality Score | Severity |
+|---|---|---|---|
+| `financial_results` | Audited/Unaudited quarterly & annual results | 10 (Results) / 6 (Board meet) | CRITICAL / MEDIUM |
+| `management_change` | Resignation/Appointment of KMP (MD, CEO, CFO, WTD) | 9-10 (KMP) / 7 (CS/Dir) | CRITICAL / HIGH |
+| `mergers_acquisitions` | Mergers, Demergers, Acquisitions, JVs, Slump Sales | 9 | CRITICAL |
+| `capex_expansion` | Capacity additions, new plant/unit commercial production | 8 | HIGH |
+| `litigation_regulatory`| Regulatory enforcement, tax demands, NCLT, penalties | 8 | HIGH |
+| `fund_raise` | Rights issues, QIP, preferential allotment, NCDs, CP | 6 | MEDIUM |
+| `credit_rating` | Revisions/reaffirmations by CRISIL, ICRA, CARE | 5 | MEDIUM |
+| `dividend_distribution`| Dividend declarations, special dividends, record dates | 6 | MEDIUM |
+| `bonus_split` | Bonus shares, stock splits, sub-divisions | 6 | MEDIUM |
+| `concall_presentation` | Investor conference call transcripts, investor decks | 4 | MEDIUM |
+| `investor_meetings` | Intimation of institutional investor meet schedules | 3 | LOW |
+| `esop_allotments` | Routine ESOP exercises and equity allotments | 2 | LOW |
+| `share_certificates` | Duplicate share certificate intimations, lost certificates | 1 | LOW |
+| `compliance_certificates`| Reg 74(5) Demat, Reg 40(9) Secretarial certificates | 1 | LOW |
+| `shareholding_pattern`| Quarterly shareholding patterns, promoter pledge disclosures | 4 | MEDIUM |
+| `board_reconstitution`| Independent director appointments/retirements, committee changes | 5 | MEDIUM |
+| `general_announcements`| Press releases, brand launches, general material contracts | 4 | MEDIUM |
+
+- **CRITICAL (Score 9-10):** Triggers immediate push notification & pinned card on top of feed.
+- **HIGH (Score 8):** Displayed prominently in material digest section.
+- **MEDIUM / LOW (Score 1-7):** Collapsed into routine paperwork section by default.
+

@@ -452,6 +452,38 @@ GUIDANCE_HISTORY_SEED = [
         "management_quote": "A once-in-a-century flood at Novelis Sierre plant constrained body-panel aluminum for Defender and Range Rover.",
         "source_doc_ref": "Tata Motors Q1FY25 Investor Concall Transcript, Page 9",
         "delivery_notes": "Exogenous supply shock caused 14,000 lost wholesale units; management expects recovery in Q3/Q4."
+    },
+    {
+        "isin": "INE040A01034",
+        "ticker": "HDFCBANK.NS",
+        "fiscal_quarter": "Q1FY25",
+        "metric": "Core Net Interest Margin (NIM)",
+        "guidance_type": "RANGE",
+        "min_guidance": 3.40,
+        "max_guidance": 3.60,
+        "promised_guidance": "Post-merger with parent HDFC, our core focus is maintaining NIM between 3.4% to 3.6% while running down high-cost borrowings.",
+        "delivered_actual": "Reported Q2FY25 core NIM of 3.46% on total assets, within guided corridor.",
+        "variance": "+6 bps above guided floor; stable asset quality (GNPA 1.36%).",
+        "status": "MET",
+        "management_quote": "Post-merger with parent HDFC, our core focus is maintaining NIM between 3.4% to 3.6% while running down high-cost borrowings.",
+        "source_doc_ref": "HDFC Bank Q1FY25 Earnings Concall Transcript, Page 6",
+        "delivery_notes": "Credit-to-deposit ratio calibrated downward to 101% from 110% at merger."
+    },
+    {
+        "isin": "INE002A01018",
+        "ticker": "RELIANCE.NS",
+        "fiscal_quarter": "Q4FY24",
+        "metric": "Jio 5G Capex Tapering",
+        "guidance_type": "QUALITATIVE",
+        "min_guidance": None,
+        "max_guidance": None,
+        "promised_guidance": "Our pan-India 5G capex cycle has peaked, and telecom cash flows are now strongly converting to free cash flow.",
+        "delivered_actual": "Reported H1FY25 telecom capex moderation of 32% YoY; Jio ARPU expanded to Rs 195.",
+        "variance": "Capex tapering verified in cash flow statements with free cash generation.",
+        "status": "QUALITATIVE",
+        "management_quote": "Our pan-India 5G capex cycle has peaked, and telecom cash flows are now strongly converting to free cash flow.",
+        "source_doc_ref": "Reliance Q4FY24 Media & Analyst Presentation, Slide 14",
+        "delivery_notes": "Tariff hikes in July 2024 drove 7.4% QoQ ARPU improvement."
     }
 ]
 
@@ -478,6 +510,28 @@ CONCALL_SEED = [
         "management_remarks": "Noel Tata / P. Venkatesalu (CEO): Standalone Q2 revenue was Rs 4,035 Cr, up 39% YoY. Westside and Zudio combined registered 12% like-for-like (LFL) sales growth across mature stores.",
         "guidance_excerpts": "We will open between 50 to 60 Zudio stores in Q3 ahead of the festive and winter season. Capex per store remains tightly controlled at Rs 2.2 Cr.",
         "analyst_qa_excerpts": "Analyst (Morgan Stanley): Are you seeing any demand fatigue in small towns? Venkatesalu: Absolutely none. In fact, tier 3 stores are reaching cash breakeven within 45 days of launch."
+    },
+    {
+        "id": "concall-hdfc-q2fy25",
+        "isin": "INE040A01034",
+        "ticker": "HDFCBANK.NS",
+        "fiscal_quarter": "Q2FY25",
+        "transcript_date": "2026-10-22",
+        "content_hash": compute_hash("Sashidhar Jagdishan MD HDFC Bank core NIM 3.46 gross NPA 1.36 net NPA 0.41"),
+        "management_remarks": "Sashidhar Jagdishan (MD & CEO): In Q2, our Net Interest Income grew to Rs 30,110 Cr with core Net Interest Margin stabilizing at 3.46%. Asset quality remains pristine with Gross NPA at 1.36% and Net NPA at 0.41%.",
+        "guidance_excerpts": "Post-merger with parent HDFC, our core focus is maintaining NIM between 3.4% to 3.6% while running down high-cost borrowings. Deposit accretion will outpace loan growth to bring LDR to historical levels.",
+        "analyst_qa_excerpts": "Analyst (Goldman Sachs): How soon will the credit-deposit ratio normalize? Jagdishan: We expect CD ratio to approach 90% over the next 24 to 36 months via strong retail branch deposit mobilization."
+    },
+    {
+        "id": "concall-reliance-q2fy25",
+        "isin": "INE002A01018",
+        "ticker": "RELIANCE.NS",
+        "fiscal_quarter": "Q2FY25",
+        "transcript_date": "2026-10-28",
+        "content_hash": compute_hash("Mukesh Ambani Reliance Jio retail EBITDA 5G capex tapering free cash flow"),
+        "management_remarks": "Mukesh Ambani (Chairman): Consolidated EBITDA for Q2 was Rs 43,934 Cr. Consumer businesses (Jio and Retail) contributed over 50% of EBITDA. Telecom ARPU rose to Rs 195 following the July tariff revision.",
+        "guidance_excerpts": "Our pan-India 5G capex cycle has peaked, and telecom cash flows are now strongly converting to free cash flow. In New Energy, our solar giga-factory in Jamnagar will commence phased commercial operations in H2FY25.",
+        "analyst_qa_excerpts": "Analyst (Citi): What is the outlook on petchem margins? Srikanth Venkatachari: O2C margins were impacted by global refining weakness, but domestic retail fuel integration cushioned the downstream segment."
     }
 ]
 

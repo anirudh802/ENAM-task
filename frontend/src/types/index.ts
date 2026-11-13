@@ -112,35 +112,71 @@ export interface UserPreferences {
 }
 
 export interface GuidanceItem {
+  id?: number;
   fiscal_quarter: string;
   metric: string;
+  guidance_type?: 'NUMERIC' | 'RANGE' | 'QUALITATIVE';
+  min_guidance?: number | null;
+  max_guidance?: number | null;
   promised_guidance: string;
   delivered_actual: string;
   variance: string;
-  status: 'BEAT' | 'MET' | 'MISSED' | 'PENDING';
+  status: 'BEAT' | 'MET' | 'MISSED' | 'QUALITATIVE' | 'PENDING';
   management_quote: string;
+  source_doc_ref?: string;
   delivery_notes: string;
+  citation_verified?: boolean;
 }
 
 export interface PullResearch {
+  isin?: string;
   ticker: string;
   company_name: string;
   sector: string;
   market_cap_tier: string;
+  template_type?: 'INDUSTRIAL_EQUITY' | 'BFSI_BANK_NBFC';
+  citation_faithfulness_score?: number;
+  verification_status?: string;
+  sebi_research_disclaimer?: string;
+  model_version?: string;
+  prompt_version?: string;
+  cache_hit?: boolean;
+  coverage_assessment?: {
+    coverage_pct: number;
+    status: string;
+    breakdown: {
+      concall_transcripts_available: number;
+      latest_concall_quarter?: string | null;
+      regulatory_announcements_count: number;
+      guidance_track_records_count: number;
+    };
+    is_ready_for_deepdive: boolean;
+  };
   business_snapshot: {
     summary: string;
     segments: Array<{ name: string; revenue_share_pct: number; margin_pct: number }>;
     competitive_moat: string;
   };
   financial_snapshot: {
-    current_revenue_cr: number;
-    revenue_yoy_growth_pct: number;
-    ebitda_margin_pct: number;
-    pat_cr: number;
-    pat_yoy_growth_pct: number;
-    roce_pct: number;
-    roe_pct: number;
-    debt_to_equity: number;
+    current_revenue_cr?: number;
+    revenue_yoy_growth_pct?: number;
+    ebitda_margin_pct?: number;
+    pat_cr?: number;
+    pat_yoy_growth_pct?: number;
+    roce_pct?: number;
+    roe_pct?: number;
+    debt_to_equity?: number;
+    // Bank / NBFC fields
+    net_interest_income_cr?: number;
+    nim_pct?: number;
+    nim_bps?: number;
+    gross_npa_pct?: number;
+    net_npa_pct?: number;
+    provision_coverage_ratio_pct?: number;
+    return_on_assets_pct?: number;
+    return_on_equity_pct?: number;
+    is_asset_quality_healthy?: boolean;
+    [key: string]: any;
   };
   trajectory: {
     multi_year_trend: string;
@@ -148,12 +184,14 @@ export interface PullResearch {
     compressing_risks: string[];
   };
   cash_quality: {
-    cfo_cr: number;
-    pat_cr: number;
-    cash_conversion_ratio: number;
-    free_cash_flow_cr: number;
-    working_capital_days: number;
+    cfo_cr?: number | null;
+    pat_cr?: number;
+    cash_conversion_ratio?: number | null;
+    free_cash_flow_cr?: number | null;
+    working_capital_days?: number | null;
+    liquidity_coverage_ratio_pct?: number | null;
     assessment: string;
+    [key: string]: any;
   };
   narrative_vs_numbers: GuidanceItem[];
   bull_case: string[];
