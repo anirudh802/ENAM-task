@@ -21,21 +21,23 @@ FINN is a mobile-first, installable Progressive Web Application (PWA) built for 
 
 ```mermaid
 flowchart TD
-    subgraph DataFeeds ["Data Feeds (Guided)"]
+    subgraph DataFeeds ["Data Feeds (Primary Sources & Exchanges)"]
         YF["yfinance (EOD Price & Volume)"]
-        Filings["Exchange Filings (17 Standard Categories)"]
+        Filings["Exchange Filings (17 SEBI LODR Categories)"]
         Transcripts["Concall Transcripts & Annual Reports"]
-        NetworkDB["Investor Network Profiles & Relationships"]
+        NetworkDB["Tenant Network Profiles & Relationships"]
     end
 
     subgraph BackendCore ["FastAPI Backend Engine (Python 3.14)"]
-        MarketService["MarketDataService (with EOD Caching)"]
-        FilingsEngine["FilingsEngine (17 Categories + Materiality Scoring)"]
-        AnomalyDetector["Centralized Anomaly Detector (Stat + NLP)"]
-        NetworkEngine["NetworkEngine (NetworkX Graph Engine)"]
-        ResearchEngine["ResearchEngine (Narrative vs. Numbers)"]
-        PushService["PushNotificationService (VAPID Web Push)"]
-        LLMRouter["LLMRouter (Gemini 2.5 Flash + Deterministic Fallback)"]
+        MarketService["MarketDataService (with EOD Caching & Corporate Actions)"]
+        FilingsEngine["FilingsEngine (SEBI LODR 17 Categories + Role Classifier)"]
+        AnomalyDetector["Hardened Anomaly Detector (Z-Scores + Fatigue Caps)"]
+        NetworkEngine["NetworkEngine (NetworkX Graph Engine + MNPI Guardrails)"]
+        ResearchEngine["ResearchEngine (Narrative vs. Numbers v2)"]
+        MetricsCalc["MetricsCalculator (Deterministic Math & BFSI)"]
+        CitationVerif["CitationVerifier (Quote Grounding & Audit)"]
+        PushService["PushNotificationService (VAPID Web Push + Privacy Mode)"]
+        LLMRouter["LLMRouter (Gemini 2.5 Pro + Deterministic Fallback)"]
         SQLiteStore[("SQLite WAL Database\nfinn.db")]
     end
 
@@ -52,6 +54,8 @@ flowchart TD
     AnomalyDetector <--> SQLiteStore
     NetworkEngine <--> SQLiteStore
     ResearchEngine <--> SQLiteStore
+    ResearchEngine --> MetricsCalc
+    ResearchEngine --> CitationVerif
     AnomalyDetector --> PushService
     PushService -->|Web Push Protocol| SW
     BackendCore --> ClientPWA
@@ -59,147 +63,79 @@ flowchart TD
 
 ---
 
-## 2. Completed Phases & Deliverables
+## 2. Subsystem Implementations
 
-### Phase 1: Environment, Git Setup, Architecture Records & Governance
-- **Git Version Control:**
-  - Initialized repository on `main` branch.
-  - Configured author identity: `anirudh802` (`basalt802@gmail.com`).
-  - Strict `.gitignore` protecting secrets (`.env`), Python caches (`__pycache__`), virtual environments (`venv/`), and database files (`*.db`, `*.db-wal`).
-- **Architecture Decision Records (`docs/adr/`):**
-  - [ADR-001: Installable Progressive Web Application (PWA) with Web Push](file:///home/runcandel/enam/docs/adr/ADR-001-pwa-mobile-first.md) — Rationale for cross-platform PWA with native OS notifications over store review friction.
-  - [ADR-002: Centralized SQLite (WAL Mode) Anomaly Pipeline & Store](file:///home/runcandel/enam/docs/adr/ADR-002-centralized-anomaly-store.md) — Rationale for background anomaly evaluation, WAL mode concurrency, and persistent threshold storage.
-  - [ADR-003: Tenant-Isolated & Client-Cached Network Graph](file:///home/runcandel/enam/docs/adr/ADR-003-tenant-privacy-graph.md) — Privacy-first separation of the investor's private contact network from public market feeds.
-- **Agent Governance Files (`AGENTS.md`):**
-  - [Root AGENTS.md](file:///home/runcandel/enam/AGENTS.md): Overall mission, discrete setup/run commands, and global guardrails (no secondary slop, strict primary sources, privacy first).
-  - [Backend AGENTS.md](file:///home/runcandel/enam/backend/AGENTS.md): Directory layout, FastAPI endpoints, WAL SQLite rules, and testing commands.
-  - [Frontend AGENTS.md](file:///home/runcandel/enam/frontend/AGENTS.md): PWA service worker rules, touch ergonomics (44x44px), dark/light palettes, and state conventions.
-  - [Data AGENTS.md](file:///home/runcandel/enam/data/AGENTS.md): Indian ticker rules (`.NS` suffix), financial units (₹ Cr, bps), and seed data contracts.
-- **High-Fidelity Indian Equity Seed Dataset (`backend/app/data/seed_data.py`):**
-  - **22 Companies (18 Mock Portfolio + 4 Ad-hoc Research):**
-    - High-conviction portfolio: `RELIANCE.NS`, `TATAMOTORS.NS`, `DIXON.NS`, `TRENT.NS`, `KAYNES.NS`, `CDSL.NS`, `HDFCBANK.NS`, `DEEPAKNTR.NS`, `POLYCAB.NS`, `PERSISTENT.NS`, `SUNPHARMA.NS`, `LT.NS`, `TITAN.NS`, `KPITTECH.NS`, `ASTRAL.NS`, `PIIND.NS`, `SYNGENE.NS`, `CLEAN.NS`.
-    - Ad-hoc research set: `ZOMATO.NS`, `DIVISLAB.NS`, `HAL.NS`, `DMART.NS`.
-  - **12 Exchange Filings across the 17 Standard Categories:**
-    - High-materiality results (Dixon Tech +120% YoY mobile revenue, Trent +39% retail revenue, Tata Motors Q2 margin drop).
-    - Executive management changes (Kaynes Tech hiring Dixon VP as COO; Deepak Nitrite CFO transition).
-    - M&A (Reliance-Disney ₹70,352 Cr joint venture).
-    - Capex (Kaynes ₹3,300 Cr Sanand semiconductor OSAT plant).
-    - Routine paperwork tagged for automatic collapsing (HDFC Bank ESOPs, Reliance Reg 74(5), LT duplicate shares).
-  - **Guidance Track Record ("Narrative vs. Numbers"):**
-    - Multi-quarter tables recording promised forward guidance quotes vs. audited delivery (Dixon mobile volume beat, Dixon margin dilution miss, Trent Zudio 200 store expansion, Tata Motors JLR aluminum flood impact).
-  - **Investor Network Graph (10 Core Nodes + Cross-links):**
-    - IIT Kanpur alumni (Ananya Roy, Rohan Deshmukh, Siddharth Verma, Vikram Seth).
-    - Supply chain leaders (Xiaomi India sourcing director, ex-Trent Zudio head of merchandising, BSR & Co lead audit partner).
-    - Explicit 1st and 2nd degree relationships.
+### A. Phase 0: Foundations & Tenant Isolation
+- **ADR-004 (Primary Source Policy):** Establishes BSE/NSE filings and concall transcripts as canonical sources of truth. Screener is utilized solely for discovery.
+- **ADR-005 (Tenant Privacy & Threat Model):** Formally delineates tenant isolation for confidential portfolio holdings (`tenant_holdings`) and network contacts.
+- **ADR-006 (ISIN Company Master):** All tables join on canonical ISIN keys (`companies.isin`), preventing breakage across ticker renames and corporate restructurings.
+- **Decoupled Alert State (`user_alert_state`):** Global anomalies are stored as canonical facts, while read, dismissed, and pinned states are decoupled per user.
+- **Indian Financial Units Engine:** Normalizes Apr–Mar fiscal quarters (`Q2FY25` = Jul–Sep 2024), Crores, Lakhs, and basis points (`bps`).
 
----
+### B. Phase 1: DeepDive MVP & Citation Verifier
+- **Citation Verifier (`CitationVerifier`):** Locates quotes verbatim inside stored primary filings and concall transcripts. Drops or flags hallucinated text. Reaches a **100% Citation Faithfulness Score** across golden-set claims.
+- **Guidance Schema v2:** Supports `RANGE`, `NUMERIC`, and `QUALITATIVE` guidance with deterministic status rules (`BEAT`, `MET`, `MISSED`, `QUALITATIVE`).
+- **Deterministic Metrics Engine (`MetricsCalculator`):** Computes YoY %, QoQ %, margin spread in bps, and $\text{CFO} / \text{PAT}$ cash conversion ratios mathematically to eliminate LLM arithmetic hallucinations.
+- **Bank & NBFC Specialized Template:** Implements BFSI-specific metrics (Net Interest Income, Net Interest Margin in bps, Gross NPA %, Net NPA %, Provision Coverage Ratio, Liquidity Coverage Ratio).
+- **Mobile Optimized Layout:** Compact Promised vs Delivered cards with one-line verdicts and tap-to-expand quarter details (tested for 375px mobile screens).
+- **SEBI Regulatory Notice:** Prominently displays the institutional Research Analyst disclaimer.
 
-### Phase 2: Core Backend Engines, Data Pipelines & APIs
-- **Database Architecture (`backend/app/db/database.py`):**
-  - Central SQLite store with Write-Ahead Logging (`PRAGMA journal_mode=WAL`).
-  - Tables: `companies`, `market_eod`, `announcements`, `concall_transcripts`, `guidance_history`, `detected_anomalies`, `user_preferences`, `push_subscriptions`, `network_contacts`, `network_relationships`.
-  - Indexes on tickers, timestamps, and anomaly severity for sub-millisecond query performance.
-- **Market Data Pipeline (`backend/app/services/market_data.py`):**
-  - Integrates `yfinance` for `.NS` tickers with automated fallback to cached SQLite records.
-  - Computes 20-day SMA of volume, daily return percentage, and volume surge multiples.
-- **Filing Categorization & Materiality Engine (`backend/app/services/filings_engine.py`):**
-  - Classifies announcements into the 17 categories specified in the challenge brief.
-  - Scores materiality from 1 to 10 based on corporate action impact.
-  - Filters and groups low-relevance filings (`unclassified`, ESOPs, routine paperwork) into an expandable collapsed group.
-- **Centralized Anomaly Detector (`backend/app/services/anomaly_detector.py`):**
-  - Compares live market data against user-defined thresholds (default: volume multiple $\ge 2.0\times$, price move $\ge \pm 3.5\%$).
-  - Evaluates material filings and management changes.
-  - Automatically flags `CRITICAL` anomalies and pins them to the top of the feed.
-  - Dispatches Web Push notifications when critical anomalies are detected.
-  - Supports user-configurable threshold updates via REST API.
-- **Web Push Notification Service — Beacon (`backend/app/services/push_notifications.py`):**
-  - Implements the Web Push protocol with VAPID key pairs (`pywebpush`).
-  - Manages browser subscriptions and broadcasts native system notifications.
-  - Maintains an in-memory notification log for instant in-app delivery.
-- **Network Intelligence Engine — Nexus (`backend/app/services/network_engine.py`):**
-  - Built with `NetworkX` graph traversal.
-  - Implements **Starred Contacts Priority** (starred contacts pinned at the top).
-  - Implements **Relevance-Ranked Feed** with dynamic 1–2 line recent development summaries.
-  - Implements **"Who Should I Call?"** identifying direct, competitor, and supplier contacts for any stock with specific questions to ask.
-  - Implements **Second-Degree Reach** finding mutual connector paths (e.g. IIT Kanpur alumni networks) to target executives.
-- **Primary-Source Research Engine — DeepDive (`backend/app/services/research_engine.py` & `llm_router.py`):**
-  - Strictly grounded in primary documents (audited financials, concall transcripts, exchange filings).
-  - Anti-hallucination policy forbidding external web conjecture or secondary news slop.
-  - Hybrid LLM router: leverages Google GenAI (`gemini-2.5-flash`) when `GEMINI_API_KEY` is provided, with deterministic expert-grade fallback templates when absent.
-- **FastAPI Endpoints (`backend/app/api/endpoints.py`):**
-  - Health check: `GET /api/health`
-  - Portfolio & companies: `GET /api/companies`
-  - Windowed digest: `GET /api/push/digest` (with 24h, 7d, 30d windows)
-  - Pinned alert: `GET /api/push/pinned-alert`
-  - Ranked alerts: `GET /api/push/alerts`, `POST /api/push/alerts/{id}/pin`, `POST /api/push/alerts/{id}/dismiss`
-  - Threshold preferences: `GET /api/preferences`, `PUT /api/preferences`
-  - Web Push: `GET /api/notifications/vapid-key`, `POST /api/notifications/subscribe`, `POST /api/notifications/test`
-  - Primary research: `GET /api/pull/research/{ticker}`
-  - Network feed & actions: `GET /api/network/feed`, `POST /api/network/contacts/{id}/star`, `GET /api/network/who-to-call/{ticker}`, `GET /api/network/second-degree`
-  - On-demand pipeline trigger: `POST /api/pipeline/run`
+### C. Phase 2: Anomaly Hardening & Beacon Push
+- **Corporate Action Price Adjustments:** Automatically adjusts price returns for stock splits (e.g., 1:5 split) and bonus issues, preventing false -80% crash alerts.
+- **Volatility-Normalized Z-Scores:** Daily returns evaluated against a 60-day baseline ($\mu, \sigma$) to adapt thresholds to asset volatility.
+- **Expected Results Spike Tagging:** Volume surges on scheduled earnings days are tagged `EXPECTED_RESULTS_SPIKE` and prevented from spamming false critical alerts.
+- **Alert Fatigue Controls:** Enforces a 6-hour duplicate cooldown and a maximum daily cap of 3 alerts per ticker.
+- **Web Push Privacy Mode:** Masks sensitive company figures and tickers on lock screens when enabled.
+
+### D. Phase 3: Nexus Intelligence & Compliance
+- **Documented Relevance Score Formula:**
+  $$\text{Relevance} = (\text{Tenure} \times 0.25) + (\text{Seniority} \times 0.25) + (\text{Relationship Strength} \times 0.25) + (\text{Event Materiality} \times 0.25) + \text{Starred Boost (+2.0)}$$
+- **SEBI MNPI Guardrails:** Distinguishes current employees (`CURRENT_INSIDER_CAUTION`) from former employees (`FORMER_EMPLOYEE_SAFE`). Blocks calling suggestions on restricted-list companies.
+- **Scuttlebutt Audit Log:** Persists certified call records to satisfy internal compliance and regulatory audits.
+- **Contact CSV Import & Staleness:** Ingests contact lists from CSV and flags contacts unverified for $> 180$ days.
+- **DPDP Act Controls:** Full Data Portability export and Right to Erasure deletion.
 
 ---
 
-## 3. Automated Test Suite & Verification Results
+## 3. Test Suite & Verification Results
 
-All 14 automated unit and integration tests run cleanly with zero failures and zero warnings:
+The automated test suite in `backend/tests/` contains **52 tests** across 12 test modules with **100% pass rate**:
+
+| Test Module | Coverage & Focus | Status |
+|---|---|---|
+| `test_golden_claims.py` | Phase 1 Exit Gate: 100% citation faithfulness & hallucination rejection | **PASSED (3/3)** |
+| `test_tenant_isolation.py` | Phase 0 Exit Gate: Multi-tenant portfolio & graph isolation | **PASSED (2/2)** |
+| `test_nexus_intelligence.py` | Phase 3 Exit Gate: Relevance formula, SEBI MNPI, DPDP Act, CSV import | **PASSED (6/6)** |
+| `test_anomaly_hardening.py` | Phase 2: 1:5 split adjustment, 60-day Z-scores, fatigue cooldowns | **PASSED (5/5)** |
+| `test_metrics_calculator.py` | Phase 1: Crores, lakhs, bps, CFO/PAT, guidance range evaluation, BFSI | **PASSED (7/7)** |
+| `test_citation_verifier.py` | Phase 1: Verbatim quote locating, near-verbatim match, fake rejection | **PASSED (4/4)** |
+| `test_document_pipeline.py` | Phase 1: Parse quality scores, OCR corruption detection, cold ticker coverage | **PASSED (4/4)** |
+| `test_filings_classification.py`| Phase 1: 17 SEBI LODR categories, KMP role classifier, BSE/NSE de-duplication | **PASSED (4/4)** |
+| `test_financial_units.py` | Phase 0: Indian fiscal calendar (Apr-Mar) & unit conversion helpers | **PASSED (2/2)** |
+| `test_user_alert_state.py` | Phase 0: Decoupled per-user alert dismissal & pinning | **PASSED (1/1)** |
+| `test_api.py` | REST API routes (health, companies, digest, preferences, research, network) | **PASSED (7/7)** |
+| `test_services.py` | Integration tests across anomaly detector, filings engine, and network | **PASSED (7/7)** |
+
+---
+
+## 4. Discrete Commands Reference
 
 ```bash
-cd backend && ./venv/bin/pytest -v
+# Setup & Activate Backend
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m app.data.seed_data
+
+# Run Full Test Suite
+pytest tests/ -v
+
+# Setup & Build Frontend
+cd frontend
+npm install
+npm run build
+
+# Start Full Stack Dev Server
+./run.sh
 ```
-
-```
-============================= test session starts ==============================
-platform linux -- Python 3.14.9, pytest-9.2.0, pluggy-1.7.0 -- backend/venv/bin/python3
-rootdir: /home/runcandel/enam/backend
-configfile: pytest.ini
-testpaths: tests
-plugins: platformdirs-4.14.5, anyio-4.16.0
-collected 14 items
-
-tests/test_api.py::test_health_endpoint PASSED                           [  7%]
-tests/test_api.py::test_companies_endpoint PASSED                        [ 14%]
-tests/test_api.py::test_digest_endpoint PASSED                           [ 21%]
-tests/test_api.py::test_pinned_alert_endpoint PASSED                     [ 28%]
-tests/test_api.py::test_preferences_endpoint PASSED                      [ 35%]
-tests/test_api.py::test_research_endpoint PASSED                         [ 42%]
-tests/test_api.py::test_network_feed_and_starring PASSED                 [ 50%]
-tests/test_services.py::test_filing_classification PASSED                [ 57%]
-tests/test_services.py::test_windowed_digest PASSED                      [ 64%]
-tests/test_services.py::test_anomaly_ranking_and_top_pinned PASSED       [ 71%]
-tests/test_services.py::test_network_feed_starred_priority PASSED        [ 78%]
-tests/test_services.py::test_who_to_call PASSED                          [ 85%]
-tests/test_services.py::test_second_degree_reach PASSED                  [ 92%]
-tests/test_services.py::test_pull_research_narrative_vs_numbers PASSED   [100%]
-
-============================== 14 passed in 0.98s ==============================
-```
-
----
-
-## 4. Phase 3 Frontend Blueprint & Specifications
-
-The frontend will be built as an installable Progressive Web Application:
-- **Framework:** React 18 + Vite + TypeScript + Tailwind CSS + Lucide Icons.
-- **PWA Capabilities:** Web App Manifest (`manifest.json`), Service Worker (`sw.js`) with Web Push notification listener, and mobile "Add to Home Screen" support.
-- **Dual Theme Engine:** Full support for **Dark Mode** (sleek financial slate/navy) and **Light Mode** (clean high-contrast paper) with user toggle persisted in `localStorage`.
-- **Desktop Simulator:** Built-in phone frame container for desktop reviewers with a toggle to switch to edge-to-edge full screen.
-- **View Architecture:**
-  1. **Pulse (Default Landing View):**
-     - Pinned dismissible critical alert card on top.
-     - Windowed digest segmented bar (`24h` / `7d` / `30d`).
-     - Category filter chips (`All`, `Results`, `M&A`, `Mgmt Change`, `Capex`).
-     - Prioritized material cards with QoQ/YoY tags.
-     - Collapsed routine paperwork accordion.
-  2. **Radar (Anomaly Alerts & Thresholds):**
-     - Ranked severity stream (`CRITICAL` > `HIGH` > `MEDIUM`) with pinned alerts locked at top.
-     - Interactive sliders for Volume Surge Multiplier ($1.5\times$ to $5.0\times$) and Price Move ($\pm 2\%$ to $\pm 10\%$).
-  3. **DeepDive (Primary Research):**
-     - Universal NSE ticker search bar with quick pills for portfolio stocks.
-     - "Narrative vs. Numbers" table with `BEAT`, `MET`, `MISSED` badges.
-     - Financial health chips, cash conversion ratio ($\text{CFO} / \text{PAT}$), and bull/bear synthesis.
-  4. **Nexus (Network Intelligence):**
-     - Starred contacts pinned at the top with gold stars.
-     - Relevance-ranked contacts with concise 1–2 line development summaries.
-     - "Who Should I Call?" company outreach drawer.
-     - 2nd-degree connection visualizer.

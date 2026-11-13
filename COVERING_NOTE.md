@@ -9,90 +9,89 @@
 
 ## What Was Built
 
-FINN is a mobile-first, installable Progressive Web Application (PWA) engineered specifically for high-conviction public-market investors at ENAM Holdings. It bridges market data, exchange filings, primary fundamentals, and the investor’s personal network into a single, high-density workflow:
+FINN is a mobile-first, installable Progressive Web Application (PWA) engineered specifically for high-conviction public-market investors at ENAM Holdings. It bridges real-time exchange filings, market technicals, primary-source disclosures, and the investor’s latent personal network into a single, high-density workflow:
 
 1. **Pulse (Proactive Windowed Push):**
-   - Windowed digest (24h, 7d, 30d) across the investor's portfolio (e.g. `RELIANCE.NS`, `TATAMOTORS.NS`, `DIXON.NS`, `TRENT.NS`, `KAYNES.NS`, `CDSL.NS`).
-   - Categorizes announcements into the 17 standardized categories defined in the brief.
-   - Intelligently collapses routine compliance paperwork (ESOP allotments, Reg 74 certificates, secretarial forms) to eradicate noise.
-   - Pinned critical cards for material events (e.g., sudden management change or volume breakout) with direct outreach actions.
+   - Windowed digest (24h, 7d, 30d) across the investor's confidential portfolio (`tenant_holdings`).
+   - Categorizes announcements into the **17 standard SEBI LODR Schedule III categories** with deterministic materiality scores (1 to 10).
+   - De-duplicates cross-exchange corporate announcements across BSE and NSE within 3-hour windows.
+   - Intelligently collapses routine compliance paperwork (ESOP allotments, Reg 74 certificates, secretarial filings) to eradicate noise.
+   - Pinned critical cards for material events (e.g., sudden CXO resignation, 4.8x volume explosion) with direct outreach actions.
+   - **Corporate Action Price Adjustment:** Stock splits (e.g., 1:5 split) and bonus issues are adjusted automatically to prevent false -80% crash alerts.
+   - **Volatility-Normalized Z-Scores:** Daily returns evaluated against a 60-day historical baseline ($\mu, \sigma$).
+   - **Alert-Fatigue Controls:** 6-hour duplicate cooldowns and a daily cap (max 3 alerts/ticker/day).
 2. **DeepDive (Grounded Primary Research):**
    - Strictly grounded in primary sources (audited annual reports, quarterly concall transcripts, exchange filings). No broker notes, no secondary news slop.
-   - **Narrative vs. Numbers:** Multi-quarter tracking comparing management forward guidance against audited delivered actuals with quantified variances (`BEAT`, `MET`, `MISSED`).
-   - Cash quality evaluation: Operating cash flow vs. accounting PAT ($\text{CFO} / \text{PAT}$ cash conversion ratio), free cash flow, and working capital cycles.
+   - **Golden-Set Faithfulness Verification:** Every extracted claim and quote is validated against stored primary text (`CitationVerifier`). Fake or hallucinated quotes fail verification and are dropped.
+   - **Guidance Schema v2 (Promised vs. Delivered):** Multi-quarter tracking comparing management forward guidance against audited delivered actuals with deterministic status rules (`RANGE`, `NUMERIC`, `QUALITATIVE` -> `BEAT`, `MET`, `MISSED`).
+   - **Bank & NBFC Specialized Template:** Dedicated financial metrics for BFSI (Net Interest Income, Net Interest Margin in bps, Gross NPA %, Net NPA %, Provision Coverage Ratio, Liquidity Coverage Ratio).
+   - **Cash Quality Evaluation:** Operating cash flow vs. accounting PAT ($\text{CFO} / \text{PAT}$ cash conversion ratio), free cash flow, and working capital cycles.
+   - **Cold-Ticker Coverage Assessment:** Ingestion pipeline reporting document coverage percentage before diligence runs.
+   - **SEBI Research Analyst Notice:** Institutional disclaimer displayed prominently on generated diligence.
 3. **Nexus (Network Intelligence Layer):**
-   - Integrates the investor's private network directly into market events.
-   - **Starred priority:** Pinned starred contacts on top.
-   - **Relevance ranking:** Dynamically ranks contacts with 1–2 line summaries of recent developments connecting their past/current employers or alumni ties to live market events.
-   - **"Who to Call":** Automatically surfaces direct former employees, competitor contacts, and supplier contacts for any stock, with concrete questions to ask.
+   - Integrates the investor's private network directly into market events with tenant boundary isolation.
+   - **Documented Relevance Score Formula:**
+     $$\text{Relevance} = (\text{Tenure} \times 0.25) + (\text{Seniority} \times 0.25) + (\text{Relationship Strength} \times 0.25) + (\text{Event Materiality} \times 0.25) + \text{Starred Boost (+2.0)}$$
+   - **"Who to Call":** Surfaces direct former employees, competitor contacts, and supplier contacts with targeted questions.
+   - **SEBI MNPI Guardrails:** Distinguishes current employees (flagged with `CURRENT_INSIDER` caution banners under SEBI PIT Regulations) from former employees (`FORMER_EMPLOYEE_SAFE`). Restricted list checking blocks calling suggestions on active mandates.
+   - **Scuttlebutt Audit Log:** Persists an audit trail of scuttlebutt calls certifying non-MNPI compliance.
+   - **Contact Import & Staleness:** CSV/vCard contact import with automated staleness detection (> 180 days).
+   - **DPDP Act Controls:** Data Portability export and Right to Erasure deletion.
    - **Second-Degree Reach:** Maps mutual connectors (e.g. IIT Kanpur alumni networks) to target executives with warm introduction asks.
 4. **Beacon (Native Web Push Notifications):**
    - Uses the Web Push protocol (VAPID) and Service Workers to dispatch OS-level system notifications on physical phones and desktops when critical anomalies occur in the background.
+   - **Privacy Mode:** User setting to mask ticker and figures on lock screens (`"Critical alert detected for your portfolio"`).
+   - Automatic cleanup of expired (410 Gone) subscriptions.
 5. **Ergonomics & Themes:**
    - Full support for **Dark Mode** and **Light Mode**.
-   - Built-in toggleable Phone Simulator Frame for desktop reviewers and seamless full-screen mobile layout.
+   - Built-in toggleable Phone Simulator Frame for desktop reviewers and seamless full-screen mobile layout (usable at 375px viewport without sideways scroll).
 
 ---
 
-## Foundational Architecture Choices
+## Verification & Test Results
 
-```mermaid
-flowchart LR
-    subgraph Data ["Data Layer"]
-        YF["yfinance (EOD)"]
-        Filings["Exchange Filings (17 Types)"]
-        Concalls["Concalls & Primary ARs"]
-    end
+The backend test suite contains **52 automated unit and integration tests** achieving a **100% pass rate**:
 
-    subgraph Backend ["FastAPI + SQLite WAL"]
-        Ingest["Ingestion & Anomaly Worker"]
-        DB[("Central SQLite WAL Store")]
-        Graph["NetworkX Graph Traversal"]
-        VAPID["Beacon Web Push Dispatcher"]
-        LLM["Hybrid LLM Router"]
-    end
-
-    subgraph Client ["Frontend PWA"]
-        SW["Service Worker"]
-        PWA["React 18 + Tailwind PWA"]
-    end
-
-    Data --> Ingest --> DB
-    Ingest -->|Critical Anomaly| VAPID --> SW
-    DB --> LLM --> PWA
-    Graph --> PWA
+```
+tests/test_anomaly_hardening.py        5 passed (100%)
+tests/test_api.py                      7 passed (100%)
+tests/test_citation_verifier.py        4 passed (100%)
+tests/test_document_pipeline.py        4 passed (100%)
+tests/test_filings_classification.py   4 passed (100%)
+tests/test_financial_units.py          2 passed (100%)
+tests/test_golden_claims.py            3 passed (100%)  <-- Phase 1 Exit Gate
+tests/test_metrics_calculator.py       7 passed (100%)
+tests/test_nexus_intelligence.py       6 passed (100%)  <-- Phase 3 Exit Gate
+tests/test_services.py                 7 passed (100%)
+tests/test_tenant_isolation.py         2 passed (100%)  <-- Phase 0 Exit Gate
+tests/test_user_alert_state.py         1 passed (100%)
+============================= 52 passed in 20.33s ==============================
 ```
 
-### 1. Data Pipelines & Centralized Store
-- **Central SQLite Store with Write-Ahead Logging (`PRAGMA journal_mode=WAL`):** Eliminates database lock contention between background anomaly ingestion workers and API readers.
-- **EOD Market Ingestion:** Pulls from `yfinance` for `.NS` tickers with automated caching to ensure sub-millisecond query responses and zero downtime during network drops.
-- **Anomaly Detection:** Evaluates statistical thresholds ($Vol / SMA_{20} \ge 2.0\times$, $|\Delta\%| \ge 3.5\%$) and NLP materiality scoring (1–10). Thresholds are stored per-user in SQLite and adjustable in real time via UI sliders.
+---
 
-### 2. Data Security & Privacy (The Network)
-- **Tenant Boundary Isolation:** The investor's network graph (contacts, past employers, alumni ties, notes) is stored in a dedicated tenant database and synchronized locally to client **IndexedDB**.
-- **Zero Cross-Contamination:** Network graph nodes and edges are strictly private and never blended into shared or public market tables. Graph queries run entirely against the authenticated user's private sub-graph.
+## Architectural Decision Records (ADRs)
 
-### 3. Use of LLMs and AI Agents
-- **Anti-Hallucination Grounding by Design:** The model is never permitted to perform unrestricted web searches or lean on pre-trained speculation for company diligence. All prompts are injected with exact primary excerpts (audited financial line items, verbatim concall quotes, regulatory filings).
-- **Hybrid Cost-Optimized Routing:**
-  - Evaluates on Google GenAI (`gemini-2.5-flash`) when `GEMINI_API_KEY` is present.
-  - Automatically falls back to deterministic, high-fidelity financial extraction templates when running offline or without an API key.
-
-### 4. Cloud Services & Deployment
-- **Frontend:** Installable PWA with Service Worker, hostable on Vercel, Cloudflare Pages, or containerized environments.
-- **Backend:** Lightweight FastAPI service deployable on Fly.io, Render, or a single Docker container with persistent volume storage for `finn.db`.
-- **Local Launcher:** Single command `./run.sh` launches both backend (port 8000) and frontend (port 5173).
+All foundational architectural decisions are formally documented under `docs/adr/`:
+- [ADR-001: PWA Mobile-First Architecture](file:///home/runcandel/enam/docs/adr/ADR-001-pwa-mobile-first-architecture.md)
+- [ADR-002: Centralized SQLite Store with WAL Mode](file:///home/runcandel/enam/docs/adr/ADR-002-centralized-sqlite-wal-store.md)
+- [ADR-003: Grounded LLM Routing Policy](file:///home/runcandel/enam/docs/adr/ADR-003-grounded-llm-routing-policy.md)
+- [ADR-004: Primary Source-of-Truth Policy](file:///home/runcandel/enam/docs/adr/ADR-004-source-of-truth-policy.md)
+- [ADR-005: Tenant Privacy & Encryption Architecture](file:///home/runcandel/enam/docs/adr/ADR-005-tenant-privacy-encryption.md)
+- [ADR-006: ISIN-Keyed Company Master](file:///home/runcandel/enam/docs/adr/ADR-006-isin-company-master.md)
+- [Deployment Specification & Budget](file:///home/runcandel/enam/docs/DEPLOYMENT_SPEC.md)
 
 ---
 
-## What Was Deliberately Left Out & Trade-offs
-1. **Unfiltered News & Broker Sentiment:** Broker notes and financial blog commentary were deliberately excluded to maintain high signal-to-noise ratio and eliminate "AI slop".
-2. **Heavy Native App Packaging (React Native / Flutter):** Opted for an installable Progressive Web App (PWA) with Web Push instead of waiting for iOS TestFlight review cycles, giving evaluators zero-friction instant access on mobile browsers.
-3. **Complex Vector DB Overhead:** For a focused 15–20 company portfolio and 25+ node network, relational SQLite with WAL and in-memory `NetworkX` graph traversal provides sub-millisecond latency without the maintenance overhead and latency of a vector database.
+## How to Run & Verify
 
----
+```bash
+# One-line launcher (Starts backend on :8000 and frontend Vite dev on :5173)
+./run.sh
 
-## Where We'd Take It Next
-1. **Intraday Tick Streaming:** Upgrade from EOD polling to live WebSocket order-book streams (e.g. Zerodha Kite Connect or Upstox API) for real-time order flow and block deal tracking.
-2. **Automated Concall Transcription:** Pipe live earnings call audio streams directly into Whisper / Gemini Flash for real-time sentiment shifts while the CEO is still speaking.
-3. **End-to-End Encrypted Network Sync:** Implement client-side AES-256-GCM encryption where the user holds the private decryption key, ensuring the server never sees raw contact names in plaintext.
+# Run backend test suite
+cd backend && ./venv/bin/pytest -v
+
+# Run production frontend build
+cd frontend && npm run build
+```
