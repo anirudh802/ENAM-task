@@ -1,14 +1,57 @@
+"""
+Network Graph & Intelligence Engine (Nexus — N-01 through N-07)
+Features:
+- Tenant-Isolated Network Graph traversal with NetworkX (F-02, F-03)
+- Documented Relevance Score Formula (N-03)
+- SEBI MNPI Guardrails & Insider Caution Banners (N-06)
+- Function and Tenure-Based 'Who-to-Call' Ranking (N-05)
+- Grounded 1-2 line summaries citing verified filing events (N-04)
+- Contact Import & Staleness Flagging (> 180 days) (N-01)
+- DPDP Act Compliance: Data Portability and Erasure (N-07)
+- Second-Degree Reach within Tenant Graph (N-02)
+"""
+
+import re
+import csv
+import io
 import json
+import uuid
 import networkx as nx
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timedelta
 from app.db.database import get_db
 
 DEFAULT_TENANT_ID = "tenant-enam-01"
+DEFAULT_USER_ID = "user-enam-01"
 
 class NetworkEngine:
     def __init__(self):
         # Cache of tenant_id -> nx.Graph
         self._tenant_graphs: Dict[str, nx.Graph] = {}
+
+    @staticmethod
+    def calculate_relevance_score(
+        tenure_years: float,
+        is_cxo_or_lead: bool,
+        relationship_strength: int,
+        event_materiality: int = 8,
+        is_starred: bool = False
+    ) -> float:
+        """
+        Documented Relevance Score Formula (N-03):
+        Relevance = (Tenure * 0.25) + (Seniority * 0.25) + (Relationship Strength * 0.25) + (Event Materiality * 0.25) + Starred Boost (+2.0)
+        Returns score capped between 1.0 and 10.0.
+        """
+        tenure_score = min(10.0, max(1.0, tenure_years * 1.5))
+        seniority_score = 10.0 if is_cxo_or_lead else 6.0
+        strength_score = min(10.0, max(1.0, relationship_strength * 2.0))
+        materiality_score = float(min(10, max(1, event_materiality)))
+
+        base = (tenure_score * 0.25) + (seniority_score * 0.25) + (strength_score * 0.25) + (materiality_score * 0.25)
+        if is_starred:
+            base += 2.0
+
+        return round(min(10.0, max(1.0, base)), 2)
 
     def _get_or_build_graph(self, tenant_id: str = DEFAULT_TENANT_ID) -> nx.Graph:
         """Retrieves or builds tenant-isolated in-memory NetworkX graph."""
@@ -23,7 +66,7 @@ class NetworkEngine:
             cursor.execute("""
             SELECT id, name, current_title, current_company, current_company_ticker,
                    relationship_strength, is_starred, past_companies, education, themes,
-                   relevance_score, recent_development_summary, notes
+                   relevance_score, recent_development_summary, notes, last_verified
             FROM network_contacts
             WHERE tenant_id = ?;
             """, (tenant_id,))
@@ -41,7 +84,8 @@ class NetworkEngine:
                     strength=c["relationship_strength"],
                     is_starred=bool(c["is_starred"]),
                     relevance_score=c["relevance_score"],
-                    summary=c["recent_development_summary"]
+                    summary=c["recent_development_summary"],
+                    last_verified=c["last_verified"]
                 )
 
                 # Add Current Company Edge
@@ -93,21 +137,35 @@ class NetworkEngine:
         Returns tenant-isolated contacts prioritized for the investor:
         1. Starred contacts pinned at top.
         2. Relevance-ranked feed with 1-2 line recent development summaries.
+        3. Stale contacts flagged if unverified for > 180 days (N-01).
         """
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("""
             SELECT id, tenant_id, name, current_title, current_company, current_company_ticker,
                    relationship_strength, is_starred, past_companies, education, themes,
-                   relevance_score, recent_development_summary, notes
+                   relevance_score, recent_development_summary, notes, last_verified
             FROM network_contacts
             WHERE tenant_id = ?
             ORDER BY is_starred DESC, relevance_score DESC;
             """, (tenant_id,))
             rows = cursor.fetchall()
 
+        now = datetime.now()
         contacts = []
         for r in rows:
+            last_ver = r["last_verified"]
+            is_stale = False
+            if last_ver:
+                try:
+                    dt = datetime.fromisoformat(last_ver)
+                    if (now - dt).days > 180:
+                        is_stale = True
+                except Exception:
+                    is_stale = True
+            else:
+                is_stale = True
+
             contacts.append({
                 "id": r["id"],
                 "tenant_id": r["tenant_id"],
@@ -122,7 +180,9 @@ class NetworkEngine:
                 "themes": json.loads(r["themes"] or "[]"),
                 "relevance_score": r["relevance_score"],
                 "recent_development_summary": r["recent_development_summary"],
-                "notes": r["notes"]
+                "notes": r["notes"],
+                "last_verified": r["last_verified"],
+                "is_stale": is_stale
             })
         return contacts
 
@@ -139,13 +199,37 @@ class NetworkEngine:
                 return bool(new_status)
         return False
 
-    def get_who_to_call(self, ticker: str, tenant_id: str = DEFAULT_TENANT_ID) -> Dict[str, Any]:
+    def get_who_to_call(
+        self,
+        ticker: str,
+        topic_function: Optional[str] = None, # 'finance_margin', 'supply_chain', 'management'
+        tenant_id: str = DEFAULT_TENANT_ID,
+        restricted_list: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculates who to call with SEBI MNPI guardrails and role-function ranking (N-05, N-06).
+        Categorizes contacts into CURRENT_INSIDER (caution), FORMER_EMPLOYEE (safe), and EXPERT.
+        """
+        ticker_clean = ticker.upper().strip()
+        restricted_set = set(restricted_list or [])
+
+        # Check Restricted List (SEBI PIT Rule)
+        is_restricted = ticker_clean in restricted_set or ticker_clean.replace(".NS", "") in restricted_set
+
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT name, sector FROM companies WHERE ticker = ?;", (ticker,))
+            cursor.execute("SELECT name, sector FROM companies WHERE ticker = ?;", (ticker_clean,))
             comp_row = cursor.fetchone()
             if not comp_row:
-                return {"ticker": ticker, "company_name": ticker, "direct_contacts": [], "competitor_contacts": [], "supplier_contacts": [], "suggested_questions": []}
+                return {
+                    "ticker": ticker_clean,
+                    "company_name": ticker_clean,
+                    "is_restricted": is_restricted,
+                    "direct_contacts": [],
+                    "competitor_contacts": [],
+                    "supplier_contacts": [],
+                    "suggested_questions": []
+                }
 
             comp_name = comp_row["name"]
             sector = comp_row["sector"]
@@ -154,16 +238,28 @@ class NetworkEngine:
         direct_contacts = []
         competitor_contacts = []
         supplier_contacts = []
-        ticker_clean = ticker.split(".")[0].lower()
+        ticker_base = ticker_clean.split(".")[0].lower()
 
         for c in feed:
             is_direct = False
-            if c["current_company_ticker"] == ticker or ticker_clean in (c["current_company"] or "").lower():
+            curr_comp = (c["current_company"] or "").lower()
+            is_current_employee = (c["current_company_ticker"] == ticker_clean) or (ticker_base in curr_comp)
+
+            # Classify Compliance Role under SEBI PIT Regulations (N-06)
+            if is_current_employee:
+                c["compliance_role"] = "CURRENT_INSIDER"
+                c["mnpi_caution"] = (
+                    "SEBI PIT WARNING: Current employee/insider. Strictly avoid asking about non-public "
+                    "quarterly numbers, undisclosed contracts, or forward guidance."
+                )
                 direct_contacts.append(c)
                 is_direct = True
             else:
+                # Check Past Employment (Ex-employees are safer for scuttlebutt)
                 for p in c["past_companies"]:
-                    if ticker_clean in p.get("company", "").lower():
+                    if ticker_base in p.get("company", "").lower():
+                        c["compliance_role"] = "FORMER_EMPLOYEE_SAFE"
+                        c["mnpi_caution"] = "Permissible scuttlebutt source: Former employee (historical operational culture only)."
                         direct_contacts.append(c)
                         is_direct = True
                         break
@@ -171,6 +267,8 @@ class NetworkEngine:
             if not is_direct:
                 for theme in c["themes"]:
                     if any(t in theme.lower() for t in ["ems", "electronics", "retail", "chemicals", "automotive", "banking", "pharma"]):
+                        c["compliance_role"] = "INDEPENDENT_EXPERT"
+                        c["mnpi_caution"] = "Permissible: Independent value chain source."
                         if "supplier" in (c["notes"] or "").lower() or "sourcing" in (c["current_title"] or "").lower():
                             if c not in supplier_contacts:
                                 supplier_contacts.append(c)
@@ -178,23 +276,164 @@ class NetworkEngine:
                             if c not in competitor_contacts:
                                 competitor_contacts.append(c)
 
-        suggested_questions = [
-            f"What is the actual capacity utilization and floor yield rate for {comp_name} vs guided numbers?",
-            "How sustainable are the reported EBITDA margins given raw material inflation pass-through?",
-            "Are you seeing customer order deferrals or inventory buildup across the distribution channel?"
-        ]
+        # Function-specific question formulation (N-05)
+        if topic_function == "finance_margin":
+            suggested_questions = [
+                f"How has {comp_name}'s component pass-through pricing model impacted gross dollar profit per unit?",
+                "What is the working capital cycle reality on the factory floor vs reported balance sheet numbers?",
+                "Are vendor payables stretching, or are customer advances supporting liquidity?"
+            ]
+        elif topic_function == "supply_chain":
+            suggested_questions = [
+                f"Are there component bottlenecks or lead-time delays affecting {comp_name}'s primary product lines?",
+                "What is the localization percentage for key components (display, semiconductor, precision mechanics)?",
+                "How are shipping freight rates and port turnaround times impacting quarterly delivery schedules?"
+            ]
+        else:
+            suggested_questions = [
+                f"What is the actual capacity utilization and yield rate for {comp_name} vs guided numbers?",
+                "How sustainable are reported operating margins under domestic raw material pricing pressure?",
+                "Are you seeing customer order deferrals or distributor inventory buildup in the channel?"
+            ]
 
         return {
-            "ticker": ticker,
+            "ticker": ticker_clean,
             "company_name": comp_name,
             "sector": sector,
-            "direct_contacts": direct_contacts,
+            "is_restricted": is_restricted,
+            "restricted_status_message": "CALLING BLOCKED: Company is on ENAM restricted list due to active mandates" if is_restricted else "Compliant",
+            "direct_contacts": direct_contacts if not is_restricted else [],
             "competitor_contacts": competitor_contacts[:3],
             "supplier_contacts": supplier_contacts[:3],
             "suggested_questions": suggested_questions
         }
 
-    def get_second_degree_reach(self, target_person_name: str, target_role: str, target_company: str, tenant_id: str = DEFAULT_TENANT_ID) -> Dict[str, Any]:
+    def log_mnpi_call(
+        self,
+        contact_id: str,
+        ticker: str,
+        call_objective: str,
+        tenant_id: str = DEFAULT_TENANT_ID,
+        user_id: str = DEFAULT_USER_ID
+    ) -> Dict[str, Any]:
+        """
+        Logs an audit trail record for an investor scuttlebutt call (N-06).
+        Confirms compliance with SEBI (Prohibition of Insider Trading) Regulations.
+        """
+        audit_id = f"mnpi-audit-{uuid.uuid4().hex[:8]}"
+        now_iso = datetime.now().isoformat()
+
+        with get_db() as conn:
+            conn.execute("""
+            INSERT INTO mnpi_call_audit_log (
+                id, tenant_id, user_id, contact_id, ticker, call_objective, compliance_declaration, logged_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 1, ?);
+            """, (audit_id, tenant_id, user_id, contact_id, ticker, call_objective, now_iso))
+
+        return {
+            "audit_id": audit_id,
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "contact_id": contact_id,
+            "ticker": ticker,
+            "compliance_status": "LOGGED_AND_CERTIFIED",
+            "logged_at": now_iso
+        }
+
+    def import_contacts_csv(self, csv_content: str, tenant_id: str = DEFAULT_TENANT_ID) -> Tuple[int, List[str]]:
+        """
+        Imports investor network contacts from CSV with staleness verification (N-01).
+        Columns: name, current_title, current_company, current_company_ticker, relationship_strength, education, themes, notes
+        """
+        reader = csv.DictReader(io.StringIO(csv_content.strip()))
+        imported_count = 0
+        errors = []
+        now_date = datetime.now().strftime("%Y-%m-%d")
+
+        with get_db() as conn:
+            for idx, row in enumerate(reader):
+                name = row.get("name")
+                if not name:
+                    errors.append(f"Row {idx+1}: Missing required contact name")
+                    continue
+
+                contact_id = f"net-import-{uuid.uuid4().hex[:8]}"
+                title = row.get("current_title", "Industry Professional")
+                company = row.get("current_company", "")
+                ticker = row.get("current_company_ticker")
+                strength = int(row.get("relationship_strength") or 3)
+
+                edu_raw = row.get("education", "[]")
+                themes_raw = row.get("themes", "[]")
+                notes = row.get("notes", "")
+
+                try:
+                    edu_json = json.dumps(json.loads(edu_raw) if edu_raw.startswith("[") else [{"institution": edu_raw}])
+                except Exception:
+                    edu_json = "[]"
+
+                try:
+                    themes_json = json.dumps(json.loads(themes_raw) if themes_raw.startswith("[") else [themes_raw])
+                except Exception:
+                    themes_json = "[]"
+
+                relevance = NetworkEngine.calculate_relevance_score(
+                    tenure_years=3.0,
+                    is_cxo_or_lead="director" in title.lower() or "partner" in title.lower() or "cxo" in title.lower(),
+                    relationship_strength=strength,
+                    event_materiality=8,
+                    is_starred=False
+                )
+
+                conn.execute("""
+                INSERT INTO network_contacts (
+                    id, tenant_id, name, current_title, current_company, current_company_ticker,
+                    relationship_strength, is_starred, past_companies, education, themes,
+                    relevance_score, recent_development_summary, notes, last_verified
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, ?, ?, ?, ?, ?);
+                """, (
+                    contact_id, tenant_id, name, title, company, ticker, strength,
+                    edu_json, themes_json, relevance,
+                    f"Imported contact ({company}); last verified {now_date}.",
+                    notes, now_date
+                ))
+                imported_count += 1
+
+        self.invalidate_tenant_graph(tenant_id)
+        return imported_count, errors
+
+    def export_tenant_contacts(self, tenant_id: str = DEFAULT_TENANT_ID) -> Dict[str, Any]:
+        """DPDP Act Data Portability: Exports tenant-isolated network data (N-07)."""
+        contacts = self.get_network_feed(tenant_id)
+        return {
+            "tenant_id": tenant_id,
+            "exported_at": datetime.now().isoformat(),
+            "contact_count": len(contacts),
+            "contacts": contacts,
+            "compliance_standard": "Digital Personal Data Protection Act, 2023 (DPDP)"
+        }
+
+    def delete_tenant_contact(self, contact_id: str, tenant_id: str = DEFAULT_TENANT_ID) -> bool:
+        """DPDP Act Right to Erasure: Deletes contact and associated edges (N-07)."""
+        with get_db() as conn:
+            conn.execute("DELETE FROM network_contacts WHERE id = ? AND tenant_id = ?;", (contact_id, tenant_id))
+            conn.execute("DELETE FROM network_relationships WHERE (from_contact_id = ? OR to_contact_id = ?) AND tenant_id = ?;",
+                         (contact_id, contact_id, tenant_id))
+        self.invalidate_tenant_graph(tenant_id)
+        return True
+
+    def get_second_degree_reach(
+        self,
+        target_person_name: str,
+        target_role: str,
+        target_company: str,
+        tenant_id: str = DEFAULT_TENANT_ID
+    ) -> Dict[str, Any]:
+        """
+        Traverses the tenant's own network graph to locate shared educational or firm bridges (N-02).
+        """
         feed = self.get_network_feed(tenant_id)
         best_path = None
 

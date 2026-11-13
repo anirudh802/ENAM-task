@@ -145,7 +145,7 @@ def trigger_test_notification():
 def get_company_research(ticker: str):
     return ResearchEngine.get_company_research(ticker)
 
-# --- Nexus: Tenant-Isolated Network Intelligence (F-02, F-03) ---
+# --- Nexus: Tenant-Isolated Network Intelligence (F-02, F-03, N-01 - N-07) ---
 @router.get("/network/feed")
 def get_network_feed(tenant_id: str = Query(DEFAULT_TENANT_ID)):
     return network_engine.get_network_feed(tenant_id=tenant_id)
@@ -161,9 +161,10 @@ def toggle_star_contact(
 @router.get("/network/who-to-call/{ticker}")
 def get_who_to_call(
     ticker: str,
+    topic_function: Optional[str] = Query(None),
     tenant_id: str = Query(DEFAULT_TENANT_ID)
 ):
-    return network_engine.get_who_to_call(ticker, tenant_id=tenant_id)
+    return network_engine.get_who_to_call(ticker, topic_function=topic_function, tenant_id=tenant_id)
 
 @router.get("/network/second-degree")
 def get_second_degree_reach(
@@ -173,6 +174,33 @@ def get_second_degree_reach(
     tenant_id: str = Query(DEFAULT_TENANT_ID)
 ):
     return network_engine.get_second_degree_reach(target_person, target_role, target_company, tenant_id=tenant_id)
+
+@router.post("/network/import")
+def import_contacts(
+    csv_content: str = Body(..., embed=True),
+    tenant_id: str = Query(DEFAULT_TENANT_ID)
+):
+    count, errors = network_engine.import_contacts_csv(csv_content, tenant_id=tenant_id)
+    return {"imported_count": count, "errors": errors, "tenant_id": tenant_id}
+
+@router.get("/network/export")
+def export_contacts(tenant_id: str = Query(DEFAULT_TENANT_ID)):
+    return network_engine.export_tenant_contacts(tenant_id=tenant_id)
+
+@router.delete("/network/contacts/{contact_id}")
+def delete_contact(contact_id: str, tenant_id: str = Query(DEFAULT_TENANT_ID)):
+    success = network_engine.delete_tenant_contact(contact_id, tenant_id=tenant_id)
+    return {"deleted": success, "contact_id": contact_id, "tenant_id": tenant_id}
+
+@router.post("/network/audit-call")
+def audit_call(
+    contact_id: str = Body(..., embed=True),
+    ticker: str = Body(..., embed=True),
+    call_objective: str = Body(..., embed=True),
+    tenant_id: str = Query(DEFAULT_TENANT_ID),
+    user_id: str = Query(DEFAULT_USER_ID)
+):
+    return network_engine.log_mnpi_call(contact_id, ticker, call_objective, tenant_id=tenant_id, user_id=user_id)
 
 # --- Pipeline Runner (On-demand trigger for demo/eval) ---
 @router.post("/pipeline/run")

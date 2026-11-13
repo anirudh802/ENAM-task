@@ -1,6 +1,18 @@
+"""
+Anomaly Detector & Hardened Alerts Pipeline (P-06, P-07, P-08, P-09, P-10)
+Features:
+- Corporate Action Price Adjustments (P-07: stock splits and bonus issues)
+- Volatility-Normalized Z-Scores on 60-day historical window (P-08)
+- Expected Event Spike Tagging & Suppression for Results/Expiry (P-09)
+- Alert-Fatigue Controls: Cooldown and Daily Caps (P-10)
+- Freshness timestamp ('as of' time) on every alert (P-06)
+- Decoupled Per-User Alert State (F-05)
+"""
+
 import json
 import uuid
-from typing import List, Dict, Any, Optional
+import math
+from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from app.db.database import get_db
 from app.services.push_notifications import PushNotificationService
@@ -15,15 +27,19 @@ class AnomalyDetector:
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-            SELECT volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical, starred_tickers, enabled_categories
+            SELECT volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical,
+                   push_privacy_mode, max_daily_alerts_per_ticker, starred_tickers, enabled_categories
             FROM user_preferences WHERE user_id = ?;
             """, (user_id,))
             row = cursor.fetchone()
             if row:
+                keys = row.keys()
                 return {
                     "volume_multiplier_threshold": row["volume_multiplier_threshold"],
                     "price_move_pct_threshold": row["price_move_pct_threshold"],
                     "auto_notify_critical": bool(row["auto_notify_critical"]),
+                    "push_privacy_mode": bool(row["push_privacy_mode"]) if "push_privacy_mode" in keys else False,
+                    "max_daily_alerts_per_ticker": row["max_daily_alerts_per_ticker"] if "max_daily_alerts_per_ticker" in keys else 3,
                     "starred_tickers": json.loads(row["starred_tickers"] or "[]"),
                     "enabled_categories": json.loads(row["enabled_categories"] or "[]")
                 }
@@ -31,6 +47,8 @@ class AnomalyDetector:
             "volume_multiplier_threshold": 2.0,
             "price_move_pct_threshold": 3.5,
             "auto_notify_critical": True,
+            "push_privacy_mode": False,
+            "max_daily_alerts_per_ticker": 3,
             "starred_tickers": [],
             "enabled_categories": ["results", "M&A", "management_change", "fund_raise", "litigation", "capex"]
         }
@@ -40,14 +58,146 @@ class AnomalyDetector:
         volume_threshold: float,
         price_threshold: float,
         auto_notify: bool,
+        push_privacy_mode: bool = False,
+        max_daily_cap: int = 3,
         user_id: str = DEFAULT_USER_ID
     ) -> Dict[str, Any]:
         with get_db() as conn:
             conn.execute("""
-            INSERT OR REPLACE INTO user_preferences (user_id, volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical)
-            VALUES (?, ?, ?, ?);
-            """, (user_id, volume_threshold, price_threshold, 1 if auto_notify else 0))
+            INSERT OR REPLACE INTO user_preferences (
+                user_id, volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical,
+                push_privacy_mode, max_daily_alerts_per_ticker
+            )
+            VALUES (?, ?, ?, ?, ?, ?);
+            """, (user_id, volume_threshold, price_threshold, 1 if auto_notify else 0,
+                  1 if push_privacy_mode else 0, max_daily_cap))
         return AnomalyDetector.get_user_preferences(user_id)
+
+    @staticmethod
+    def check_corporate_action_adjustment(
+        isin: str,
+        trade_date: str,
+        close_price: float,
+        raw_return_pct: float,
+        conn
+    ) -> Tuple[bool, float, Optional[str]]:
+        """
+        Adjusts price moves for corporate actions (P-07: stock splits, bonus issues).
+        Returns: (is_adjusted, adjusted_return_pct, action_description)
+        """
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT action_type, ratio_from, ratio_to, adjustment_factor, record_date, ex_date
+            FROM corporate_actions
+            WHERE isin = ?;
+        """, (isin,))
+        ca_row = cursor.fetchone()
+
+        if not ca_row:
+            return False, raw_return_pct, None
+
+        adj_factor = ca_row["adjustment_factor"]
+        action_type = ca_row["action_type"]
+
+        # Check if the raw drop matches the corporate action ratio
+        # e.g., 1:5 split causes raw return of ~ -80.0%
+        expected_unadjusted_drop = (1.0 - (1.0 / adj_factor)) * -100.0
+        if math.isclose(raw_return_pct, expected_unadjusted_drop, abs_tol=5.0):
+            # Compute adjusted return: (close * factor - prev_close) / prev_close
+            adjusted_return_pct = round(((100.0 + raw_return_pct) * adj_factor) - 100.0, 2)
+            desc = f"{action_type} adjusted (Ratio {ca_row['ratio_from']}:{ca_row['ratio_to']})"
+            return True, adjusted_return_pct, desc
+
+        return False, raw_return_pct, None
+
+    @staticmethod
+    def calculate_volatility_zscore(
+        isin: str,
+        current_return_pct: float,
+        conn
+    ) -> Tuple[float, float, float]:
+        """
+        Computes 60-day baseline return statistics excluding the current day (P-08).
+        Returns: (z_score, mean_60d, std_60d)
+        """
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT daily_return_pct
+            FROM market_eod
+            WHERE isin = ?
+            ORDER BY trade_date DESC LIMIT 60 OFFSET 1;
+        """, (isin,))
+        returns = [r[0] for r in cursor.fetchall()]
+
+        if not returns or len(returns) < 5:
+            # Fallback when historical depth is insufficient
+            return (round(current_return_pct / 1.5, 2), 0.0, 1.5)
+
+        mean_ret = sum(returns) / len(returns)
+        variance = sum((r - mean_ret) ** 2 for r in returns) / len(returns)
+        std_ret = math.sqrt(variance)
+
+        if std_ret == 0:
+            std_ret = 0.5
+
+        z_score = round((current_return_pct - mean_ret) / std_ret, 2)
+        return z_score, round(mean_ret, 2), round(std_ret, 2)
+
+    @staticmethod
+    def is_expected_event_spike(isin: str, trade_date: str, conn) -> Tuple[bool, Optional[str]]:
+        """
+        Detects scheduled corporate events like quarterly results days (P-09).
+        Suppresses false CRITICAL alerts for anticipated high-volatility events.
+        """
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT category, title
+            FROM announcements
+            WHERE isin = ? AND category IN ('financial_results', 'results')
+            AND filing_time LIKE ?;
+        """, (isin, f"{trade_date}%"))
+        row = cursor.fetchone()
+
+        if row:
+            return True, "Quarterly Earnings Announcement Day"
+        return False, None
+
+    @staticmethod
+    def check_fatigue_and_cooldown(
+        ticker: str,
+        anomaly_type: str,
+        max_daily_cap: int,
+        conn
+    ) -> Tuple[bool, str]:
+        """
+        Alert fatigue controls (P-10):
+        1. Maximum alerts per ticker per 24 hours.
+        2. Cooldown of 6 hours for identical anomaly types on the same ticker.
+        """
+        cursor = conn.cursor()
+        now = datetime.now()
+        day_ago = (now - timedelta(hours=24)).isoformat()
+        six_hours_ago = (now - timedelta(hours=6)).isoformat()
+
+        # Check daily ticker cap
+        cursor.execute("""
+            SELECT COUNT(*) FROM detected_anomalies
+            WHERE ticker = ? AND created_at >= ?;
+        """, (ticker, day_ago))
+        daily_count = cursor.fetchone()[0]
+        if daily_count >= max_daily_cap:
+            return False, f"Daily cap of {max_daily_cap} alerts reached for {ticker}"
+
+        # Check cooldown for same anomaly type
+        cursor.execute("""
+            SELECT COUNT(*) FROM detected_anomalies
+            WHERE ticker = ? AND anomaly_type = ? AND created_at >= ?;
+        """, (ticker, anomaly_type, six_hours_ago))
+        recent_same_type = cursor.fetchone()[0]
+        if recent_same_type > 0:
+            return False, f"Cooldown active: {anomaly_type} recently fired for {ticker}"
+
+        return True, "Allowed"
 
     @staticmethod
     def get_ranked_anomalies(user_id: str = DEFAULT_USER_ID, include_dismissed: bool = False) -> List[Dict[str, Any]]:
@@ -138,19 +288,22 @@ class AnomalyDetector:
     @staticmethod
     def evaluate_live_anomalies(user_id: str = DEFAULT_USER_ID) -> List[Dict[str, Any]]:
         """
-        Evaluates current EOD market data against user-defined thresholds.
-        Writes canonical facts to detected_anomalies and pins critical alerts in user_alert_state.
+        Evaluates current EOD market data against calibrated statistical thresholds.
+        Includes corporate action adjustments, volatility Z-scores, expected spike suppression,
+        and fatigue controls.
         """
         prefs = AnomalyDetector.get_user_preferences(user_id)
         vol_threshold = prefs["volume_multiplier_threshold"]
         price_threshold = prefs["price_move_pct_threshold"]
+        daily_cap = prefs.get("max_daily_alerts_per_ticker", 3)
         new_anomalies = []
 
         with get_db() as conn:
             cursor = conn.cursor()
 
             cursor.execute("""
-            SELECT m.isin, m.ticker, c.name as company_name, m.close_price, m.volume, m.volume_sma_20d, m.daily_return_pct, m.volume_multiple
+            SELECT m.isin, m.ticker, c.name as company_name, m.trade_date, m.close_price,
+                   m.volume, m.volume_sma_20d, m.daily_return_pct, m.volume_multiple
             FROM market_eod m
             JOIN companies c ON m.isin = c.isin
             WHERE m.trade_date = (SELECT MAX(trade_date) FROM market_eod);
@@ -161,68 +314,136 @@ class AnomalyDetector:
                 isin = m["isin"]
                 ticker = m["ticker"]
                 name = m["company_name"]
+                trade_date = m["trade_date"]
                 vol_mult = m["volume_multiple"]
-                ret_pct = m["daily_return_pct"]
+                raw_ret_pct = m["daily_return_pct"]
+                close_px = m["close_price"]
 
-                # Volume Surge Check
+                # 1. Corporate Action Price Adjustment (P-07)
+                is_ca_adjusted, effective_ret_pct, ca_desc = AnomalyDetector.check_corporate_action_adjustment(
+                    isin, trade_date, close_px, raw_ret_pct, conn
+                )
+
+                # 2. Volatility-Normalized Z-Score (P-08)
+                z_score, mean_60d, std_60d = AnomalyDetector.calculate_volatility_zscore(
+                    isin, effective_ret_pct, conn
+                )
+
+                # 3. Expected Event Spike Tagging (P-09)
+                is_expected_spike, expected_reason = AnomalyDetector.is_expected_event_spike(
+                    isin, trade_date, conn
+                )
+
+                # As of freshness timestamp (P-06)
+                as_of_timestamp = f"{trade_date} 15:30 IST (EOD)"
+
+                # --- Volume Surge Evaluation ---
                 if vol_mult >= vol_threshold:
-                    anomaly_id = f"anom-vol-{ticker.split('.')[0].lower()}"
-                    headline = f"{name}: {vol_mult}x Volume Surge ({ret_pct:+.1f}%)"
-                    detail = f"Traded volume reached {vol_mult}x the 20-day moving average. Daily return: {ret_pct:+.2f}%."
-                    severity = "CRITICAL" if vol_mult >= 3.0 else "HIGH"
+                    allowed, reason = AnomalyDetector.check_fatigue_and_cooldown(
+                        ticker, "VOLUME_SURGE", daily_cap, conn
+                    )
+                    if allowed:
+                        anomaly_id = f"anom-vol-{ticker.split('.')[0].lower()}-{trade_date}"
+                        severity = "CRITICAL" if vol_mult >= 3.0 and not is_expected_spike else "HIGH"
+                        if is_expected_spike and severity == "CRITICAL":
+                            severity = "HIGH"
 
-                    cursor.execute("""
-                    INSERT OR REPLACE INTO detected_anomalies (id, isin, ticker, anomaly_type, severity, headline, detail, metrics, created_at)
-                    VALUES (?, ?, ?, 'VOLUME_SURGE', ?, ?, ?, ?, ?);
-                    """, (
-                        anomaly_id, isin, ticker, severity, headline, detail,
-                        json.dumps({"volume_multiple": vol_mult, "daily_return_pct": ret_pct, "close": m["close_price"]}),
-                        datetime.now().isoformat()
-                    ))
+                        headline = f"{name}: {vol_mult}x Volume Surge ({effective_ret_pct:+.1f}%)"
+                        detail = f"Traded volume reached {vol_mult}x 20-day SMA. Daily return: {effective_ret_pct:+.2f}% (Z-score: {z_score:+.1f}σ)."
+                        if is_expected_spike:
+                            detail += f" [Tagged: {expected_reason}]"
 
-                    if severity == "CRITICAL":
+                        metrics = {
+                            "volume_multiple": vol_mult,
+                            "daily_return_pct": effective_ret_pct,
+                            "raw_return_pct": raw_ret_pct,
+                            "z_score": z_score,
+                            "close": close_px,
+                            "as_of": as_of_timestamp,
+                            "is_corporate_action_adjusted": is_ca_adjusted,
+                            "is_expected_event_spike": is_expected_spike
+                        }
+
                         cursor.execute("""
-                        INSERT INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed)
-                        VALUES (?, ?, 1, 0)
-                        ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
-                        """, (user_id, anomaly_id))
+                        INSERT OR REPLACE INTO detected_anomalies (id, isin, ticker, anomaly_type, severity, headline, detail, metrics, created_at)
+                        VALUES (?, ?, ?, 'VOLUME_SURGE', ?, ?, ?, ?, ?);
+                        """, (
+                            anomaly_id, isin, ticker, severity, headline, detail,
+                            json.dumps(metrics), datetime.now().isoformat()
+                        ))
 
-                    new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity})
+                        if severity == "CRITICAL":
+                            cursor.execute("""
+                            INSERT INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed)
+                            VALUES (?, ?, 1, 0)
+                            ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
+                            """, (user_id, anomaly_id))
 
-                # Price Breakout Check
-                if abs(ret_pct) >= price_threshold:
-                    anomaly_id = f"anom-price-{ticker.split('.')[0].lower()}"
-                    direction = "Breakout" if ret_pct > 0 else "Plunge"
-                    severity = "CRITICAL" if abs(ret_pct) >= 5.0 else "HIGH"
-                    headline = f"{name}: Sharp {ret_pct:+.1f}% Price {direction}"
-                    detail = f"Stock experienced an abnormal intraday move of {ret_pct:+.2f}%. Volume multiple: {vol_mult}x."
+                        new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 
-                    cursor.execute("""
-                    INSERT OR REPLACE INTO detected_anomalies (id, isin, ticker, anomaly_type, severity, headline, detail, metrics, created_at)
-                    VALUES (?, ?, ?, 'PRICE_BREAKOUT', ?, ?, ?, ?, ?);
-                    """, (
-                        anomaly_id, isin, ticker, severity, headline, detail,
-                        json.dumps({"daily_return_pct": ret_pct, "volume_multiple": vol_mult, "close": m["close_price"]}),
-                        datetime.now().isoformat()
-                    ))
+                # --- Price Breakout Evaluation (Normalized & CA Adjusted) ---
+                price_condition = abs(effective_ret_pct) >= price_threshold or abs(z_score) >= 2.5
+                if price_condition:
+                    allowed, reason = AnomalyDetector.check_fatigue_and_cooldown(
+                        ticker, "PRICE_BREAKOUT", daily_cap, conn
+                    )
+                    if allowed:
+                        anomaly_id = f"anom-price-{ticker.split('.')[0].lower()}-{trade_date}"
+                        direction = "Breakout" if effective_ret_pct > 0 else "Plunge"
+                        severity = "CRITICAL" if abs(z_score) >= 3.0 and not is_expected_spike else "HIGH"
 
-                    if severity == "CRITICAL":
+                        headline = f"{name}: {effective_ret_pct:+.1f}% Price {direction} (Z: {z_score:+.1f}σ)"
+                        detail = f"Abnormal move of {effective_ret_pct:+.2f}% (60-day σ: {std_60d}%). Volume multiple: {vol_mult}x."
+                        if is_ca_adjusted:
+                            detail += f" [{ca_desc}]"
+                        if is_expected_spike:
+                            detail += f" [Tagged: {expected_reason}]"
+
+                        metrics = {
+                            "daily_return_pct": effective_ret_pct,
+                            "raw_return_pct": raw_ret_pct,
+                            "z_score": z_score,
+                            "sigma_60d": std_60d,
+                            "volume_multiple": vol_mult,
+                            "close": close_px,
+                            "as_of": as_of_timestamp,
+                            "is_corporate_action_adjusted": is_ca_adjusted,
+                            "is_expected_event_spike": is_expected_spike
+                        }
+
                         cursor.execute("""
-                        INSERT INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed)
-                        VALUES (?, ?, 1, 0)
-                        ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
-                        """, (user_id, anomaly_id))
+                        INSERT OR REPLACE INTO detected_anomalies (id, isin, ticker, anomaly_type, severity, headline, detail, metrics, created_at)
+                        VALUES (?, ?, ?, 'PRICE_BREAKOUT', ?, ?, ?, ?, ?);
+                        """, (
+                            anomaly_id, isin, ticker, severity, headline, detail,
+                            json.dumps(metrics), datetime.now().isoformat()
+                        ))
 
-                    new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity})
+                        if severity == "CRITICAL":
+                            cursor.execute("""
+                            INSERT INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed)
+                            VALUES (?, ?, 1, 0)
+                            ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
+                            """, (user_id, anomaly_id))
 
+                        new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
+
+        # Push Notification with Privacy Mode check (B-03)
         if prefs["auto_notify_critical"]:
             criticals = [a for a in new_anomalies if a["severity"] == "CRITICAL"]
             if criticals:
                 top = criticals[0]
+                if prefs.get("push_privacy_mode"):
+                    title = "🚨 CRITICAL ALERT"
+                    body = "Critical anomaly detected for your portfolio. Tap to open FINN securely."
+                else:
+                    title = f"🚨 CRITICAL ALERT: {top['headline']}"
+                    body = "Immediate market technical anomaly detected across your portfolio."
+
                 PushNotificationService.send_broadcast_alert(
-                    title=f"🚨 CRITICAL ALERT: {top['headline']}",
-                    body="Immediate market or filing anomaly detected across your portfolio.",
-                    data={"anomaly_id": top["id"]}
+                    title=title,
+                    body=body,
+                    data={"anomaly_id": top["id"], "ticker": top.get("ticker")}
                 )
 
         return AnomalyDetector.get_ranked_anomalies(user_id=user_id)

@@ -207,11 +207,21 @@ def init_db():
             volume_multiplier_threshold REAL DEFAULT 2.0,
             price_move_pct_threshold REAL DEFAULT 3.5,
             auto_notify_critical INTEGER DEFAULT 1,
+            push_privacy_mode INTEGER DEFAULT 0,
+            max_daily_alerts_per_ticker INTEGER DEFAULT 3,
             starred_tickers TEXT DEFAULT '[]',
             enabled_categories TEXT DEFAULT '["results","M&A","management_change","fund_raise","litigation","capex"]',
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
         """)
+        try:
+            cursor.execute("ALTER TABLE user_preferences ADD COLUMN push_privacy_mode INTEGER DEFAULT 0;")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE user_preferences ADD COLUMN max_daily_alerts_per_ticker INTEGER DEFAULT 3;")
+        except Exception:
+            pass
 
         # 13. Web Push Subscriptions Table
         cursor.execute("""
@@ -275,6 +285,23 @@ def init_db():
             ex_date TEXT NOT NULL,
             adjustment_factor REAL NOT NULL,
             FOREIGN KEY (isin) REFERENCES companies(isin)
+        );
+        """)
+
+        # 17. SEBI MNPI Call Audit Log Table (N-06)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mnpi_call_audit_log (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            contact_id TEXT NOT NULL,
+            ticker TEXT NOT NULL,
+            call_objective TEXT NOT NULL,
+            compliance_declaration INTEGER DEFAULT 1,
+            logged_at TEXT NOT NULL,
+            FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (contact_id) REFERENCES network_contacts(id)
         );
         """)
 

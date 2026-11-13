@@ -700,8 +700,8 @@ def seed_database():
 
         # 3. Seed User Preferences
         cursor.execute("""
-        INSERT OR REPLACE INTO user_preferences (user_id, volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical, starred_tickers, enabled_categories)
-        VALUES ('user-enam-01', 2.0, 3.5, 1, '[]', '["results","M&A","management_change","fund_raise","litigation","capex"]');
+        INSERT OR REPLACE INTO user_preferences (user_id, volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical, push_privacy_mode, max_daily_alerts_per_ticker, starred_tickers, enabled_categories)
+        VALUES ('user-enam-01', 2.0, 3.5, 1, 0, 3, '[]', '["results","M&A","management_change","fund_raise","litigation","capex"]');
         """)
 
         # 4. Seed Companies (ISIN Master)
