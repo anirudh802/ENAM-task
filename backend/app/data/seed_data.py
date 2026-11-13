@@ -1,0 +1,994 @@
+import json
+from datetime import datetime, timedelta
+from app.db.database import get_db, init_db
+
+# 18 Mock Portfolio Companies + 4 Ad-hoc Research Companies
+COMPANIES_SEED = [
+    {
+        "ticker": "RELIANCE.NS",
+        "name": "Reliance Industries Ltd",
+        "sector": "Energy & Conglomerate",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 1980000.0,
+        "is_portfolio": 1,
+        "screener_slug": "reliance-industries",
+        "description": "India's largest private enterprise spanning oil-to-chemicals, telecom (Jio), and retail."
+    },
+    {
+        "ticker": "TATAMOTORS.NS",
+        "name": "Tata Motors Ltd",
+        "sector": "Automotive",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 310000.0,
+        "is_portfolio": 1,
+        "screener_slug": "tata-motors",
+        "description": "Global automotive manufacturer across commercial vehicles, passenger cars, EVs, and luxury (Jaguar Land Rover)."
+    },
+    {
+        "ticker": "DIXON.NS",
+        "name": "Dixon Technologies (India) Ltd",
+        "sector": "Electronics EMS",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 92000.0,
+        "is_portfolio": 1,
+        "screener_slug": "dixon-technologies",
+        "description": "Leading Indian electronic manufacturing services (EMS) company specializing in consumer electronics, mobiles, and home appliances."
+    },
+    {
+        "ticker": "TRENT.NS",
+        "name": "Trent Ltd",
+        "sector": "Retail",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 235000.0,
+        "is_portfolio": 1,
+        "screener_slug": "trent",
+        "description": "Tata group's flagship retail entity operating Westside, Zudio, and Star Bazaar hypermarkets."
+    },
+    {
+        "ticker": "KAYNES.NS",
+        "name": "Kaynes Technology India Ltd",
+        "sector": "Defense & Aerospace EMS",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 34000.0,
+        "is_portfolio": 1,
+        "screener_slug": "kaynes-technology",
+        "description": "Integrated electronics manufacturing player focusing on mission-critical aerospace, defense, automotive, and railway electronics."
+    },
+    {
+        "ticker": "CDSL.NS",
+        "name": "Central Depository Services (India) Ltd",
+        "sector": "Financial Infrastructure",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 31000.0,
+        "is_portfolio": 1,
+        "screener_slug": "central-depository-services-india",
+        "description": "First listed Indian securities depository providing dematerialized transaction services with ~70% market share in demat accounts."
+    },
+    {
+        "ticker": "HDFCBANK.NS",
+        "name": "HDFC Bank Ltd",
+        "sector": "Banking",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 1320000.0,
+        "is_portfolio": 1,
+        "screener_slug": "hdfc-bank",
+        "description": "India's largest private sector bank following its historic merger with housing parent HDFC Ltd."
+    },
+    {
+        "ticker": "DEEPAKNTR.NS",
+        "name": "Deepak Nitrite Ltd",
+        "sector": "Specialty Chemicals",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 38000.0,
+        "is_portfolio": 1,
+        "screener_slug": "deepak-nitrite",
+        "description": "Leading chemical intermediates manufacturer dominating sodium nitrite, phenol, acetone, and optical brightening agents."
+    },
+    {
+        "ticker": "POLYCAB.NS",
+        "name": "Polycab India Ltd",
+        "sector": "Capital Goods & Cables",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 98000.0,
+        "is_portfolio": 1,
+        "screener_slug": "polycab-india",
+        "description": "Market leader in wires & cables and fast-moving electrical goods (FMEG) with expansive domestic distribution."
+    },
+    {
+        "ticker": "PERSISTENT.NS",
+        "name": "Persistent Systems Ltd",
+        "sector": "IT & Digital Services",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 84000.0,
+        "is_portfolio": 1,
+        "screener_slug": "persistent-systems",
+        "description": "High-growth digital engineering and enterprise modernization IT services provider."
+    },
+    {
+        "ticker": "SUNPHARMA.NS",
+        "name": "Sun Pharmaceutical Industries Ltd",
+        "sector": "Pharmaceuticals",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 425000.0,
+        "is_portfolio": 1,
+        "screener_slug": "sun-pharmaceutical-industries",
+        "description": "India's largest drugmaker with global footprint across specialty dermatology, ophthalmology, and generics."
+    },
+    {
+        "ticker": "LT.NS",
+        "name": "Larsen & Toubro Ltd",
+        "sector": "Infrastructure & Defense",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 510000.0,
+        "is_portfolio": 1,
+        "screener_slug": "larsen-toubro",
+        "description": "National engineering, procurement, and construction (EPC) conglomerate executing mega infrastructure and defense projects."
+    },
+    {
+        "ticker": "TITAN.NS",
+        "name": "Titan Company Ltd",
+        "sector": "Consumer Discretionary",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 315000.0,
+        "is_portfolio": 1,
+        "screener_slug": "titan-company",
+        "description": "Market leader in branded jewellery (Tanishq, Mia, CaratLane), watches, and lifestyle accessories."
+    },
+    {
+        "ticker": "KPITTECH.NS",
+        "name": "KPIT Technologies Ltd",
+        "sector": "Automotive Software",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 41000.0,
+        "is_portfolio": 1,
+        "screener_slug": "kpit-technologies",
+        "description": "Pure-play software engineering and autonomous driving/electrification solutions partner to global OEMs."
+    },
+    {
+        "ticker": "ASTRAL.NS",
+        "name": "Astral Ltd",
+        "sector": "Building Materials",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 52000.0,
+        "is_portfolio": 1,
+        "screener_slug": "astral",
+        "description": "Pioneer in CPVC piping and plumbing systems, diversifying into adhesives, bathware, and paints."
+    },
+    {
+        "ticker": "PIIND.NS",
+        "name": "PI Industries Ltd",
+        "sector": "Agrochemicals & CSM",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 68000.0,
+        "is_portfolio": 1,
+        "screener_slug": "pi-industries",
+        "description": "Global custom synthesis and manufacturing (CSM) partner for innovator agrochemical and pharmaceutical molecules."
+    },
+    {
+        "ticker": "SYNGENE.NS",
+        "name": "Syngene International Ltd",
+        "sector": "Biotech & CRO",
+        "market_cap_tier": "Mid Cap",
+        "market_cap_cr": 31000.0,
+        "is_portfolio": 1,
+        "screener_slug": "syngene-international",
+        "description": "Integrated scientific research and contract development and manufacturing organization (CDMO)."
+    },
+    {
+        "ticker": "CLEAN.NS",
+        "name": "Clean Science and Technology Ltd",
+        "sector": "Specialty Chemicals",
+        "market_cap_tier": "Small Cap",
+        "market_cap_cr": 14000.0,
+        "is_portfolio": 1,
+        "screener_slug": "clean-science-technology",
+        "description": "Proprietary catalytic green chemistry manufacturer of performance chemicals like MEHQ, BHA, and DCC."
+    },
+
+    # --- Ad-Hoc Research Set (Non-Portfolio) ---
+    {
+        "ticker": "ZOMATO.NS",
+        "name": "Zomato Ltd (Eternal)",
+        "sector": "Internet / Quick Commerce",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 230000.0,
+        "is_portfolio": 0,
+        "screener_slug": "zomato",
+        "description": "Market leader in food delivery and quick commerce (Blinkit) expanding into 'going-out' entertainment."
+    },
+    {
+        "ticker": "DIVISLAB.NS",
+        "name": "Divi's Laboratories Ltd",
+        "sector": "Active Pharmaceutical Ingredients",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 155000.0,
+        "is_portfolio": 0,
+        "screener_slug": "divis-laboratories",
+        "description": "World's top supplier of generic APIs (Naproxen, Dextromethorphan) and custom synthesis for global pharma."
+    },
+    {
+        "ticker": "HAL.NS",
+        "name": "Hindustan Aeronautics Ltd",
+        "sector": "Aerospace & Defense",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 295000.0,
+        "is_portfolio": 0,
+        "screener_slug": "hindustan-aeronautics",
+        "description": "State-backed monopoly manufacturer of fighter aircraft (Tejas), helicopters (Prachand), and avionics."
+    },
+    {
+        "ticker": "DMART.NS",
+        "name": "Avenue Supermarts Ltd (DMart)",
+        "sector": "Value Retail",
+        "market_cap_tier": "Large Cap",
+        "market_cap_cr": 270000.0,
+        "is_portfolio": 0,
+        "screener_slug": "avenue-supermarts",
+        "description": "Lowest-cost everyday supermarket operator owning its store real estate with exceptional inventory turns."
+    }
+]
+
+# Market Technicals Seed (with realistic breakout volumes and deviations)
+MARKET_EOD_SEED = [
+    # DIXON: Severe volume breakout (4.8x average) + 5.2% price jump
+    {"ticker": "DIXON.NS", "trade_date": "2026-11-12", "close_price": 15420.0, "volume": 1680000, "volume_sma_20d": 350000.0, "daily_return_pct": 5.2, "volume_multiple": 4.8},
+    # TRENT: Steady compounder, normal volume (+1.1%)
+    {"ticker": "TRENT.NS", "trade_date": "2026-11-12", "close_price": 6480.0, "volume": 820000, "volume_sma_20d": 790000.0, "daily_return_pct": 1.1, "volume_multiple": 1.04},
+    # TATAMOTORS: Price drop (-4.1%) on JLR margin miss with elevated volume (2.4x)
+    {"ticker": "TATAMOTORS.NS", "trade_date": "2026-11-12", "close_price": 782.5, "volume": 24500000, "volume_sma_20d": 10200000.0, "daily_return_pct": -4.1, "volume_multiple": 2.40},
+    # KAYNES: Breakout (+6.8%) on Gujarat OSAT capex approval, volume (3.6x)
+    {"ticker": "KAYNES.NS", "trade_date": "2026-11-12", "close_price": 5840.0, "volume": 940000, "volume_sma_20d": 260000.0, "daily_return_pct": 6.8, "volume_multiple": 3.62},
+    # CDSL: Volume breakout (2.8x) following record demat account additions
+    {"ticker": "CDSL.NS", "trade_date": "2026-11-12", "close_price": 1520.0, "volume": 3900000, "volume_sma_20d": 1390000.0, "daily_return_pct": 3.8, "volume_multiple": 2.81},
+    # RELIANCE: Sideways (+0.4%)
+    {"ticker": "RELIANCE.NS", "trade_date": "2026-11-12", "close_price": 2715.0, "volume": 5100000, "volume_sma_20d": 4900000.0, "daily_return_pct": 0.4, "volume_multiple": 1.04},
+    # POLYCAB: Modest recovery (+2.1%)
+    {"ticker": "POLYCAB.NS", "trade_date": "2026-11-12", "close_price": 6550.0, "volume": 410000, "volume_sma_20d": 390000.0, "daily_return_pct": 2.1, "volume_multiple": 1.05},
+    # HDFCBANK: Flat (-0.2%)
+    {"ticker": "HDFCBANK.NS", "trade_date": "2026-11-12", "close_price": 1740.0, "volume": 12100000, "volume_sma_20d": 11800000.0, "daily_return_pct": -0.2, "volume_multiple": 1.03},
+    # DEEPAKNTR: Drop (-3.6%) following sudden CFO resignation announcement
+    {"ticker": "DEEPAKNTR.NS", "trade_date": "2026-11-12", "close_price": 2740.0, "volume": 850000, "volume_sma_20d": 380000.0, "daily_return_pct": -3.6, "volume_multiple": 2.24},
+    # PERSISTENT: Up (+1.8%)
+    {"ticker": "PERSISTENT.NS", "trade_date": "2026-11-12", "close_price": 5410.0, "volume": 320000, "volume_sma_20d": 310000.0, "daily_return_pct": 1.8, "volume_multiple": 1.03},
+    # SUNPHARMA: Up (+0.9%)
+    {"ticker": "SUNPHARMA.NS", "trade_date": "2026-11-12", "close_price": 1780.0, "volume": 1400000, "volume_sma_20d": 1450000.0, "daily_return_pct": 0.9, "volume_multiple": 0.97},
+    # LT: Up (+1.2%)
+    {"ticker": "LT.NS", "trade_date": "2026-11-12", "close_price": 3610.0, "volume": 1800000, "volume_sma_20d": 1750000.0, "daily_return_pct": 1.2, "volume_multiple": 1.03},
+    # TITAN: Up (+1.4%)
+    {"ticker": "TITAN.NS", "trade_date": "2026-11-12", "close_price": 3290.0, "volume": 980000, "volume_sma_20d": 950000.0, "daily_return_pct": 1.4, "volume_multiple": 1.03},
+    # KPITTECH: Down (-1.5%)
+    {"ticker": "KPITTECH.NS", "trade_date": "2026-11-12", "close_price": 1610.0, "volume": 610000, "volume_sma_20d": 580000.0, "daily_return_pct": -1.5, "volume_multiple": 1.05},
+    # ASTRAL: Flat (+0.3%)
+    {"ticker": "ASTRAL.NS", "trade_date": "2026-11-12", "close_price": 1890.0, "volume": 250000, "volume_sma_20d": 240000.0, "daily_return_pct": 0.3, "volume_multiple": 1.04},
+    # PIIND: Up (+1.6%)
+    {"ticker": "PIIND.NS", "trade_date": "2026-11-12", "close_price": 4350.0, "volume": 210000, "volume_sma_20d": 200000.0, "daily_return_pct": 1.6, "volume_multiple": 1.05},
+    # SYNGENE: Down (-0.8%)
+    {"ticker": "SYNGENE.NS", "trade_date": "2026-11-12", "close_price": 820.0, "volume": 350000, "volume_sma_20d": 340000.0, "daily_return_pct": -0.8, "volume_multiple": 1.03},
+    # CLEAN: Flat (+0.1%)
+    {"ticker": "CLEAN.NS", "trade_date": "2026-11-12", "close_price": 1410.0, "volume": 120000, "volume_sma_20d": 1150000.0, "daily_return_pct": 0.1, "volume_multiple": 1.04},
+]
+
+# Corporate Announcements Seed across the 17 standard categories
+ANNOUNCEMENTS_SEED = [
+    # 1. Management Change (CRITICAL) - KAYNES TECH
+    {
+        "id": "ann-kaynes-mgmt-01",
+        "ticker": "KAYNES.NS",
+        "category": "management_change",
+        "title": "Appointment of Mr. Vikram Seth as Chief Operating Officer (COO)",
+        "description": "Kaynes Technology India Limited has appointed Mr. Vikram Seth as COO effective December 1, 2026. He previously led manufacturing operations at Dixon Technologies and holds a B.Tech from IIT Kanpur.",
+        "filing_time": (datetime.now() - timedelta(hours=3)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 9,
+        "headline_metrics": None,
+        "executive_profile": {
+            "name": "Vikram Seth",
+            "role": "Chief Operating Officer",
+            "previous_employer": "Dixon Technologies (India) Ltd",
+            "previous_title": "Senior VP - Electronics Manufacturing",
+            "education": "B.Tech Mechanical Engineering, IIT Kanpur (Class of 2004)",
+            "tenure_past": "8 years at Dixon, 6 years at Foxconn India"
+        },
+        "network_connection": {
+            "connected_person_id": "net-01",
+            "connected_person_name": "Ananya Roy",
+            "relationship": "IIT Kanpur 2004 Batchmate (Computer Science)",
+            "degree_of_separation": 1,
+            "context": "Ananya Roy is in your network (Strength: 5/5). She co-founded an IoT hardware venture with Vikram during college and has maintained close personal contact."
+        }
+    },
+    # 2. Results Filing (CRITICAL) - DIXON TECH
+    {
+        "id": "ann-dixon-results-q2",
+        "ticker": "DIXON.NS",
+        "category": "results",
+        "title": "Unaudited Financial Results for Quarter ended September 30, 2026",
+        "description": "Board approved Q2FY25 standalone and consolidated results. Stellar performance in mobile phone assembly; consolidated revenue up 120% YoY.",
+        "filing_time": (datetime.now() - timedelta(hours=5)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 10,
+        "headline_metrics": {
+            "revenue_cr": 11534.0,
+            "ebitda_cr": 420.0,
+            "ebitda_margin_pct": 3.64,
+            "pbt_cr": 482.0,
+            "pat_cr": 412.0,
+            "revenue_qoq_pct": 75.2,
+            "revenue_yoy_pct": 120.4,
+            "pat_qoq_pct": 96.8,
+            "pat_yoy_pct": 263.1
+        },
+        "executive_profile": None,
+        "network_connection": {
+            "connected_person_id": "net-02",
+            "connected_person_name": "Rohan Deshmukh",
+            "relationship": "Director of Sourcing, Xiaomi India (Key Dixon Client)",
+            "degree_of_separation": 1,
+            "context": "Rohan manages Dixon's largest customer assembly line. Best person to speak with on component pipeline and Q3 production run-rate."
+        }
+    },
+    # 3. Management Change (CRITICAL) - DEEPAK NITRITE
+    {
+        "id": "ann-deepak-mgmt-02",
+        "ticker": "DEEPAKNTR.NS",
+        "category": "management_change",
+        "title": "Resignation of Chief Financial Officer Sanjay Upadhyay; Transition Plan",
+        "description": "Mr. Sanjay Upadhyay has tendered resignation due to health reasons after 12 years. Board announces Ms. Radhika Sharma (ex-Tata Chemicals) as CFO designate.",
+        "filing_time": (datetime.now() - timedelta(hours=6)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 9,
+        "headline_metrics": None,
+        "executive_profile": {
+            "name": "Radhika Sharma",
+            "role": "Chief Financial Officer (Designate)",
+            "previous_employer": "Tata Chemicals Ltd",
+            "previous_title": "VP Finance & Treasury",
+            "education": "Chartered Accountant (AIR 14), B.Com Shri Ram College of Commerce"
+        },
+        "network_connection": {
+            "connected_person_id": "net-03",
+            "connected_person_name": "Karan Mehra",
+            "relationship": "Senior Partner, BSR & Co (Auditor)",
+            "degree_of_separation": 1,
+            "context": "Karan was lead engagement partner on Tata Chemicals audit while Radhika was VP Finance."
+        }
+    },
+    # 4. Results Filing - TRENT
+    {
+        "id": "ann-trent-results-q2",
+        "ticker": "TRENT.NS",
+        "category": "results",
+        "title": "Financial Results for the Second Quarter ended September 30, 2026",
+        "description": "Standalone revenue at Rs 4,035 Cr (+39% YoY). Operating margin at 15.3%. Zudio footprint crossed 570 stores.",
+        "filing_time": (datetime.now() - timedelta(hours=14)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 9,
+        "headline_metrics": {
+            "revenue_cr": 4035.0,
+            "ebitda_cr": 617.0,
+            "ebitda_margin_pct": 15.29,
+            "pbt_cr": 465.0,
+            "pat_cr": 335.0,
+            "revenue_qoq_pct": 1.2,
+            "revenue_yoy_pct": 39.1,
+            "pat_qoq_pct": -4.2,
+            "pat_yoy_pct": 46.2
+        },
+        "executive_profile": None,
+        "network_connection": {
+            "connected_person_id": "net-04",
+            "connected_person_name": "Pooja Singhania",
+            "relationship": "Ex-Head of Merchandising, Trent Ltd (now at Nykaa)",
+            "degree_of_separation": 1,
+            "context": "Pooja worked at Trent for 7 years until 2024. Great natural reason to reconnect and ask about Zudio supply chain inventory turns."
+        }
+    },
+    # 5. M&A Announcement - RELIANCE
+    {
+        "id": "ann-reliance-ma-01",
+        "ticker": "RELIANCE.NS",
+        "category": "M&A",
+        "title": "Completion of Media JV with The Walt Disney Company",
+        "description": "Reliance Industries Limited, Viacom18, and The Walt Disney Company announce the successful closing of their strategic transaction to create an Indian media titan valued at Rs 70,352 Cr.",
+        "filing_time": (datetime.now() - timedelta(hours=18)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 8,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    },
+    # 6. Capex Announcement - KAYNES TECH
+    {
+        "id": "ann-kaynes-capex-01",
+        "ticker": "KAYNES.NS",
+        "category": "capex",
+        "title": "Groundbreaking of Semiconductor OSAT Facility at Sanand, Gujarat",
+        "description": "Kaynes Semicon Private Limited commenced construction of its advanced semiconductor packaging and test facility with total planned capex of Rs 3,300 Cr supported by India Semiconductor Mission.",
+        "filing_time": (datetime.now() - timedelta(hours=22)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 8,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    },
+    # 7. Litigation / Regulatory Order - POLYCAB
+    {
+        "id": "ann-polycab-lit-01",
+        "ticker": "POLYCAB.NS",
+        "category": "litigation",
+        "title": "Regulatory Clarification Regarding Income Tax Department Assessment",
+        "description": "Company clarifies that search assessments have concluded with demand order of Rs 42 Cr for disputed expense disallowances, which the company is contesting in appeal. No impact on business operations.",
+        "filing_time": (datetime.now() - timedelta(days=1, hours=4)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 7,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    },
+    # 8. Results Filing - TATAMOTORS
+    {
+        "id": "ann-tatamotors-results-q2",
+        "ticker": "TATAMOTORS.NS",
+        "category": "results",
+        "title": "Consolidated Financial Results for Q2 FY25",
+        "description": "Revenue at Rs 101,450 Cr (-0.4% YoY). JLR EBIT margin stood at 5.1% impacted by temporary flooding at high-grade aluminum supplier Novelis. Indian commercial vehicle business maintained healthy margins.",
+        "filing_time": (datetime.now() - timedelta(days=1, hours=8)).isoformat(),
+        "is_material": 1,
+        "materiality_score": 9,
+        "headline_metrics": {
+            "revenue_cr": 101450.0,
+            "ebitda_cr": 11565.0,
+            "ebitda_margin_pct": 11.40,
+            "pbt_cr": 4980.0,
+            "pat_cr": 3450.0,
+            "revenue_qoq_pct": -6.1,
+            "revenue_yoy_pct": -0.4,
+            "pat_qoq_pct": -34.8,
+            "pat_yoy_pct": -11.2
+        },
+        "executive_profile": None,
+        "network_connection": {
+            "connected_person_id": "net-05",
+            "connected_person_name": "Siddharth Verma",
+            "relationship": "VP Supply Chain, Tata Motors Commercial Vehicles",
+            "degree_of_separation": 1,
+            "context": "IIT Kanpur senior alumnus. Can provide on-the-ground clarity on domestic truck tonnage demand and raw material steel cost pass-through."
+        }
+    },
+    # 9. Routine / Unclassified (SHOULD BE COLLAPSED IN DIGEST)
+    {
+        "id": "ann-hdfc-esop-01",
+        "ticker": "HDFCBANK.NS",
+        "category": "unclassified",
+        "title": "Allotment of Equity Shares under Employee Stock Option Scheme",
+        "description": "Allotment of 18,240 equity shares of face value Re 1 each pursuant to exercise of stock options.",
+        "filing_time": (datetime.now() - timedelta(hours=2)).isoformat(),
+        "is_material": 0,
+        "materiality_score": 2,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    },
+    # 10. Routine / Unclassified - RELIANCE
+    {
+        "id": "ann-reliance-reg74-01",
+        "ticker": "RELIANCE.NS",
+        "category": "unclassified",
+        "title": "Compliance Certificate under Reg. 74(5) of SEBI (DP) Regulations",
+        "description": "Certificate received from KFin Technologies certifying dematerialization of shares for the quarter.",
+        "filing_time": (datetime.now() - timedelta(hours=7)).isoformat(),
+        "is_material": 0,
+        "materiality_score": 1,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    },
+    # 11. Routine / Unclassified - LT
+    {
+        "id": "ann-lt-duplicate-01",
+        "ticker": "LT.NS",
+        "category": "unclassified",
+        "title": "Intimation of loss of share certificate / issue of duplicate",
+        "description": "Intimation regarding issue of letter of confirmation in lieu of lost share certificates.",
+        "filing_time": (datetime.now() - timedelta(hours=9)).isoformat(),
+        "is_material": 0,
+        "materiality_score": 1,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    },
+    # 12. Fund Raise - PERSISTENT
+    {
+        "id": "ann-persistent-cp-01",
+        "ticker": "PERSISTENT.NS",
+        "category": "fund_raise",
+        "title": "Commercial Paper Issuance of Rs 200 Crore",
+        "description": "Persistent Systems has placed commercial paper for short-term liquidity and treasury optimization at 7.25% coupon.",
+        "filing_time": (datetime.now() - timedelta(days=2)).isoformat(),
+        "is_material": 0,
+        "materiality_score": 4,
+        "headline_metrics": None,
+        "executive_profile": None,
+        "network_connection": None
+    }
+]
+
+# Detected Anomalies Seed (Evaluated by Anomaly Detector)
+ANOMALIES_SEED = [
+    {
+        "id": "anom-dixon-vol-01",
+        "ticker": "DIXON.NS",
+        "anomaly_type": "VOLUME_SURGE",
+        "severity": "CRITICAL",
+        "headline": "Dixon Tech: 4.8x Volume Explosion with +5.2% Price Breakout",
+        "detail": "End-of-day traded volume reached 1.68M shares vs 20-day SMA of 350k shares (4.80x surge). Coincides with blockbuster Q2 mobile assembly revenue growth (+120% YoY).",
+        "metrics": {"volume_multiple": 4.8, "daily_return_pct": 5.2, "volume": 1680000, "sma_20d": 350000},
+        "created_at": (datetime.now() - timedelta(hours=4)).isoformat(),
+        "is_pinned": 1,
+        "is_dismissed": 0
+    },
+    {
+        "id": "anom-kaynes-mgmt-01",
+        "ticker": "KAYNES.NS",
+        "anomaly_type": "MANAGEMENT_CHANGE",
+        "severity": "CRITICAL",
+        "headline": "Kaynes Technology: Poaches Dixon Tech Manufacturing Head as COO",
+        "detail": "Vikram Seth appointed COO. High network relevance: Vikram is an IIT Kanpur 2004 alumnus with direct personal connection to Ananya Roy in your network.",
+        "metrics": {"connected_contact": "Ananya Roy", "relationship": "IIT Kanpur 2004 classmate", "strength": 5},
+        "created_at": (datetime.now() - timedelta(hours=3)).isoformat(),
+        "is_pinned": 1,
+        "is_dismissed": 0
+    },
+    {
+        "id": "anom-tatamotors-price-01",
+        "ticker": "TATAMOTORS.NS",
+        "anomaly_type": "PRICE_BREAKOUT",
+        "severity": "HIGH",
+        "headline": "Tata Motors: Sharp -4.1% Drop on 2.4x Volume following JLR Margin Compression",
+        "detail": "JLR EBIT margin collapsed to 5.1% (vs 8.5% guided) due to Novelis aluminum supply chain disruption. Traded volume spiked to 24.5M shares.",
+        "metrics": {"daily_return_pct": -4.1, "volume_multiple": 2.4, "jlr_ebit_margin": 5.1, "guided_margin": 8.5},
+        "created_at": (datetime.now() - timedelta(hours=8)).isoformat(),
+        "is_pinned": 0,
+        "is_dismissed": 0
+    },
+    {
+        "id": "anom-deepak-cfo-01",
+        "ticker": "DEEPAKNTR.NS",
+        "anomaly_type": "MANAGEMENT_CHANGE",
+        "severity": "HIGH",
+        "headline": "Deepak Nitrite: Sudden CFO Resignation Triggers -3.6% Price Slump",
+        "detail": "Veteran CFO Sanjay Upadhyay stepping down. Incoming CFO Radhika Sharma from Tata Chemicals. Volume jumped 2.24x average.",
+        "metrics": {"daily_return_pct": -3.6, "volume_multiple": 2.24, "incoming_cfo": "Radhika Sharma"},
+        "created_at": (datetime.now() - timedelta(hours=6)).isoformat(),
+        "is_pinned": 0,
+        "is_dismissed": 0
+    },
+    {
+        "id": "anom-cdsl-vol-01",
+        "ticker": "CDSL.NS",
+        "anomaly_type": "VOLUME_SURGE",
+        "severity": "MEDIUM",
+        "headline": "CDSL: Volume Surge 2.81x with +3.8% Gain on Record Demat Growth",
+        "detail": "Total demat accounts on CDSL crossed 13.5 Crore. Margin profile expanded to 61.2% in Q2 results.",
+        "metrics": {"volume_multiple": 2.81, "daily_return_pct": 3.8},
+        "created_at": (datetime.now() - timedelta(hours=10)).isoformat(),
+        "is_pinned": 0,
+        "is_dismissed": 0
+    }
+]
+
+# Guidance Track Record ("Narrative vs Numbers" Engine)
+GUIDANCE_HISTORY_SEED = [
+    # DIXON TECH
+    {
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q1FY25",
+        "metric": "Mobile Volume Run Rate",
+        "promised_guidance": "Mobile segment will cross 3,500 Cr quarterly run rate in Q1, reaching 4,000 Cr+ by H1.",
+        "delivered_actual": "Reported Q1 Mobile revenue of 4,800 Cr and Q2 Mobile revenue of 9,400 Cr.",
+        "variance": "+37% beat in Q1; massive outperformance in Q2 (+135%) driven by Xiaomi and Motorola ramp-up.",
+        "status": "BEAT",
+        "management_quote": "We guided for 3,500 Cr quarterly run-rate, but customer orders exceeded our most optimistic forecasts.",
+        "delivery_notes": "Execution ahead of schedule. Component localization is improving overall gross dollar profit."
+    },
+    {
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q4FY24",
+        "metric": "Consolidated EBITDA Margin",
+        "promised_guidance": "Expect consolidated EBITDA margins to sustain at or above 4.0% through FY25.",
+        "delivered_actual": "Reported Q1 margin of 3.8% and Q2 margin of 3.64%.",
+        "variance": "-36 bps margin dilution vs promised floor.",
+        "status": "MISSED",
+        "management_quote": "The dilution is purely mathematical: mobile assembly has lower % margins (3.2%) but enormous ROIC and absolute profit dollars.",
+        "delivery_notes": "Revenue exploded but % margin suffered due to mix shift toward pass-through smartphone assembly."
+    },
+    {
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q1FY25",
+        "metric": "Ismartu Acquisition Closing",
+        "promised_guidance": "Ismartu transaction will close before September 2024, adding 1,200 Cr/quarter incremental sales.",
+        "delivered_actual": "Transaction closed August 2024; contributed 1,450 Cr in Q2.",
+        "variance": "+250 Cr revenue outperformance vs guidance.",
+        "status": "BEAT",
+        "management_quote": "Ismartu integration is seamless and Transsion volume transition is completely secured.",
+        "delivery_notes": "Delivered ahead of expected closing timeline."
+    },
+
+    # TRENT LTD
+    {
+        "ticker": "TRENT.NS",
+        "fiscal_quarter": "Q4FY24",
+        "metric": "Zudio Store Expansion",
+        "promised_guidance": "Targeting 150-200 net new Zudio store additions in FY25 while preserving store unit economics.",
+        "delivered_actual": "Added 86 net stores in H1FY25 alone; operating margin sustained at 15.3%.",
+        "variance": "On track for top-end of 200 stores with zero margin erosion.",
+        "status": "MET",
+        "management_quote": "We continue to see immense white space in tier 2 and tier 3 micro-markets for Zudio without cannibalization.",
+        "delivery_notes": "Inventory turnover sustained at 45 days, proving supply chain scalability."
+    },
+    {
+        "ticker": "TRENT.NS",
+        "fiscal_quarter": "Q1FY25",
+        "metric": "Star Bazaar Profitability",
+        "promised_guidance": "Star Bazaar grocery format to reach positive store-level EBITDA in H1FY25.",
+        "delivered_actual": "Achieved positive store-level EBITDA across 85% of active stores in Q2.",
+        "variance": "Milestone delivered on target.",
+        "status": "MET",
+        "management_quote": "Own-brand penetration in food and FMCG crossed 38%, driving the margin crossover at store level.",
+        "delivery_notes": "Grocery format is no longer a drag on consolidated retail return ratios."
+    },
+
+    # TATA MOTORS
+    {
+        "ticker": "TATAMOTORS.NS",
+        "fiscal_quarter": "Q4FY24",
+        "metric": "JLR FY25 EBIT Margin",
+        "promised_guidance": "JLR EBIT margin guided to sustain above 8.5% for full-year FY25.",
+        "delivered_actual": "Delivered 8.9% in Q1, but compressed severely to 5.1% in Q2 due to Swiss aluminum flooding.",
+        "variance": "-340 bps deficit in Q2; full-year guidance revised down to ~7.5%.",
+        "status": "MISSED",
+        "management_quote": "A once-in-a-century flood at Novelis Sierre plant constrained body-panel aluminum for Defender and Range Rover.",
+        "delivery_notes": "Exogenous supply shock caused 14,000 lost wholesale units; management expects recovery in Q3/Q4."
+    }
+]
+
+# Primary-Source Transcripts & Concalls
+CONCALL_SEED = [
+    {
+        "id": "concall-dixon-q2fy25",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q2FY25",
+        "transcript_date": "2026-11-05",
+        "management_remarks": "Atul Lall (MD): In Q2, our consolidated revenues stood at Rs 11,534 Cr, representing a phenomenal 120% YoY growth. The mobile division delivered Rs 9,400 Cr against our internal budget of Rs 8,000 Cr. Our smartphone monthly run rate has crossed 3.8 million units.",
+        "guidance_excerpts": "Guidance for H2: We expect full-year FY25 revenues to approach Rs 38,000 Cr to Rs 40,000 Cr. For display modules and precision components, our JV with HKC is on schedule for pilot production in Q4FY25.",
+        "analyst_qa_excerpts": "Analyst (UBS): What is the sustainable margin on the mobile business? Atul Lall: On pure assembly, margins will be 3.0% to 3.2%. However, as backward integration into display and battery packs kicks in, blended mobile margin will expand toward 4.2%."
+    },
+    {
+        "id": "concall-trent-q2fy25",
+        "ticker": "TRENT.NS",
+        "fiscal_quarter": "Q2FY25",
+        "transcript_date": "2026-11-08",
+        "management_remarks": "Noel Tata / P. Venkatesalu (CEO): Standalone Q2 revenue was Rs 4,035 Cr, up 39% YoY. Westside and Zudio combined registered 12% like-for-like (LFL) sales growth across mature stores.",
+        "guidance_excerpts": "We will open between 50 to 60 Zudio stores in Q3 ahead of the festive and winter season. Capex per store remains tightly controlled at Rs 2.2 Cr.",
+        "analyst_qa_excerpts": "Analyst (Morgan Stanley): Are you seeing any demand fatigue in small towns? Venkatesalu: Absolutely none. In fact, tier 3 stores are reaching cash breakeven within 45 days of launch."
+    }
+]
+
+# 25+ Rich Network Contacts (Private Domain)
+# Overlapping with portfolio companies, competitors, suppliers, and IIT Kanpur alumni
+NETWORK_CONTACTS_SEED = [
+    {
+        "id": "net-01",
+        "name": "Ananya Roy",
+        "current_title": "Partner",
+        "current_company": "Peak XV Partners",
+        "current_company_ticker": None,
+        "relationship_strength": 5,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "McKinsey & Co", "role": "Associate Partner", "start_year": 2010, "end_year": 2017},
+            {"company": "Foxconn India", "role": "Supply Chain Strategist", "start_year": 2005, "end_year": 2008}
+        ],
+        "education": [
+            {"institution": "IIT Kanpur", "degree": "B.Tech Computer Science", "year": "2004"},
+            {"institution": "IIM Ahmedabad", "degree": "MBA", "year": "2010"}
+        ],
+        "themes": ["Electronics EMS", "Hardware Tech", "Venture Capital"],
+        "relevance_score": 9.8,
+        "recent_development_summary": "IIT Kanpur 2004 classmate of Vikram Seth (newly appointed COO of Kaynes Tech); ex-colleague at Foxconn.",
+        "notes": "Go-to expert on Indian electronics manufacturing and contract assembly economics."
+    },
+    {
+        "id": "net-02",
+        "name": "Rohan Deshmukh",
+        "current_title": "Director of Sourcing & Supply Chain",
+        "current_company": "Xiaomi India",
+        "current_company_ticker": None,
+        "relationship_strength": 5,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "Dixon Technologies", "role": "Head of Vendor Quality", "start_year": 2016, "end_year": 2021},
+            {"company": "Samsung Electronics", "role": "Component Sourcing Manager", "start_year": 2011, "end_year": 2016}
+        ],
+        "education": [
+            {"institution": "IIT Kanpur", "degree": "B.Tech Electrical Engineering", "year": "2007"}
+        ],
+        "themes": ["Electronics EMS", "Smartphone Supply Chain", "China-India Tech Sourcing"],
+        "relevance_score": 9.6,
+        "recent_development_summary": "Manages Xiaomi's primary assembly contract with Dixon Tech; reported 120% YoY mobile ramp in Q2.",
+        "notes": "Direct line to Dixon's factory floor yields and component bottleneck reality."
+    },
+    {
+        "id": "net-03",
+        "name": "Karan Mehra",
+        "current_title": "Senior Audit Partner",
+        "current_company": "BSR & Co LLP",
+        "current_company_ticker": None,
+        "relationship_strength": 4,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "Deloitte Haskins & Sells", "role": "Director", "start_year": 2008, "end_year": 2015}
+        ],
+        "education": [
+            {"institution": "ICAI", "degree": "Chartered Accountant", "year": "2005"}
+        ],
+        "themes": ["Corporate Governance", "Audit Quality", "Specialty Chemicals"],
+        "relevance_score": 9.2,
+        "recent_development_summary": "Lead audit partner on Tata Chemicals; audited incoming Deepak Nitrite CFO Radhika Sharma for 5 years.",
+        "notes": "Sharpest eye on forensic accounting and working capital manipulation."
+    },
+    {
+        "id": "net-04",
+        "name": "Pooja Singhania",
+        "current_title": "Chief Merchandising Officer",
+        "current_company": "Nykaa Fashion",
+        "current_company_ticker": None,
+        "relationship_strength": 4,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "Trent Ltd", "role": "Head of Merchandising (Zudio)", "start_year": 2017, "end_year": 2024},
+            {"company": "Zara India (Inditex)", "role": "Senior Buyer", "start_year": 2013, "end_year": 2017}
+        ],
+        "education": [
+            {"institution": "NIFT Delhi", "degree": "Fashion Merchandising", "year": "2011"},
+            {"institution": "ISB Hyderabad", "degree": "MBA", "year": "2013"}
+        ],
+        "themes": ["Retail", "Fashion Supply Chain", "Quick Inventory Turns"],
+        "relevance_score": 8.9,
+        "recent_development_summary": "Ex-Head of Zudio Merchandising at Trent; Trent just announced 39% revenue growth and 570 store milestone.",
+        "notes": "Natural reconnect hook: discuss how Zudio's 45-day turnaround model stacks against Nykaa."
+    },
+    {
+        "id": "net-05",
+        "name": "Siddharth Verma",
+        "current_title": "VP Commercial Vehicle Operations",
+        "current_company": "Tata Motors Ltd",
+        "current_company_ticker": "TATAMOTORS.NS",
+        "relationship_strength": 5,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "Ashok Leyland", "role": "Chief Engineer", "start_year": 2006, "end_year": 2014}
+        ],
+        "education": [
+            {"institution": "IIT Kanpur", "degree": "B.Tech Mechanical Engineering", "year": "2002"}
+        ],
+        "themes": ["Automotive", "Heavy Commercial Vehicles", "EV Powertrains"],
+        "relevance_score": 9.4,
+        "recent_development_summary": "VP at Tata Motors; directly oversees domestic commercial vehicle assembly after JLR Q2 margin drop.",
+        "notes": "Can speak with high authority on fleet replacement cycles and CV tonnage demand."
+    },
+    {
+        "id": "net-06",
+        "name": "Deepak Khaitan",
+        "current_title": "Managing Director",
+        "current_company": "Khaitan Chemicals & Fertilizers",
+        "current_company_ticker": None,
+        "relationship_strength": 4,
+        "is_starred": 0,
+        "past_companies": [
+            {"company": "Deepak Nitrite", "role": "Head of Phenol Sourcing", "start_year": 2012, "end_year": 2018}
+        ],
+        "education": [
+            {"institution": "IIT Kanpur", "degree": "B.Tech Chemical Engineering", "year": "2003"}
+        ],
+        "themes": ["Specialty Chemicals", "Phenolics & Solvents", "Agrochemicals"],
+        "relevance_score": 8.5,
+        "recent_development_summary": "Key supplier/peer to Deepak Nitrite; can explain phenol-acetone margin spread dynamics.",
+        "notes": "Deep insight into commodity chemical cycles."
+    },
+    {
+        "id": "net-07",
+        "name": "Gaurav Bansal",
+        "current_title": "Head of Technology",
+        "current_company": "Zerodha Broking Ltd",
+        "current_company_ticker": None,
+        "relationship_strength": 5,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "CDSL", "role": "Senior Architect - Depository Systems", "start_year": 2014, "end_year": 2019}
+        ],
+        "education": [
+            {"institution": "IIT Kanpur", "degree": "B.Tech Computer Science", "year": "2008"}
+        ],
+        "themes": ["Fintech", "Depository & Market Infrastructure", "Trading Tech"],
+        "relevance_score": 9.1,
+        "recent_development_summary": "Zerodha is CDSL's largest depository participant; CDSL just posted 61% EBITDA margin in Q2.",
+        "notes": "First person to call on depository transaction volume spikes and API changes."
+    },
+    {
+        "id": "net-08",
+        "name": "Dr. Rajesh Kulkarni",
+        "current_title": "Chief Scientific Officer",
+        "current_company": "Enzene Biosciences",
+        "current_company_ticker": None,
+        "relationship_strength": 3,
+        "is_starred": 0,
+        "past_companies": [
+            {"company": "Sun Pharmaceutical", "role": "VP Specialty R&D", "start_year": 2012, "end_year": 2021},
+            {"company": "Divi's Laboratories", "role": "Senior Research Scientist", "start_year": 2005, "end_year": 2012}
+        ],
+        "education": [
+            {"institution": "IIT Bombay", "degree": "Ph.D Chemical Biology", "year": "2004"}
+        ],
+        "themes": ["Pharmaceuticals", "Specialty Generics", "Biosimilars"],
+        "relevance_score": 7.8,
+        "recent_development_summary": "Led Sun Pharma's dermatology specialty pipeline; expert on FDA warning letter resolutions.",
+        "notes": "Excellent clinical diligence contact for complex injectables."
+    },
+    {
+        "id": "net-09",
+        "name": "Amitabh Sircar",
+        "current_title": "Executive VP Power & Transmission",
+        "current_company": "Kalpataru Projects International",
+        "current_company_ticker": None,
+        "relationship_strength": 4,
+        "is_starred": 0,
+        "past_companies": [
+            {"company": "Polycab India", "role": "Head of Institutional EPC Sales", "start_year": 2015, "end_year": 2022},
+            {"company": "Havells India", "role": "Regional Director", "start_year": 2008, "end_year": 2015}
+        ],
+        "education": [
+            {"institution": "IIT Kanpur", "degree": "B.Tech Electrical Engineering", "year": "2001"}
+        ],
+        "themes": ["Cables & Wires", "Power Grid Infrastructure", "EPC Contracts"],
+        "relevance_score": 8.3,
+        "recent_development_summary": "Major institutional buyer of Polycab extra-high voltage cables; knows bidding margins cold.",
+        "notes": "Great source on government transmission line tenders and copper price escalation."
+    },
+    {
+        "id": "net-10",
+        "name": "Meera Swaminathan",
+        "current_title": "Chief Operating Officer",
+        "current_company": "Blinkit (Eternal)",
+        "current_company_ticker": "ZOMATO.NS",
+        "relationship_strength": 4,
+        "is_starred": 1,
+        "past_companies": [
+            {"company": "Avenue Supermarts (DMart)", "role": "Regional Operations Head", "start_year": 2014, "end_year": 2020},
+            {"company": "Amazon India", "role": "Fulfillment Operations Director", "start_year": 2020, "end_year": 2022}
+        ],
+        "education": [
+            {"institution": "IIM Ahmedabad", "degree": "MBA", "year": "2014"},
+            {"institution": "IIT Madras", "degree": "B.Tech", "year": "2010"}
+        ],
+        "themes": ["Quick Commerce", "Dark Store Logistics", "Retail Supply Chain"],
+        "relevance_score": 9.0,
+        "recent_development_summary": "Runs Blinkit operations at Zomato; ex-DMart regional leader who understands store density.",
+        "notes": "Key contact for evaluating quick commerce unit economics vs DMart brick-and-mortar."
+    }
+]
+
+# Network Relationships (Graph Edges for 2nd Degree Traversal)
+NETWORK_RELATIONSHIPS_SEED = [
+    # Ananya Roy knows Vikram Seth (new Kaynes COO) - 1st degree to Ananya, 2nd to investor
+    {"from_id": "net-01", "to_id": "net-02", "connection_type": "EX_COLLEAGUE", "strength": 5},
+    {"from_id": "net-01", "to_id": "net-05", "connection_type": "CLASSMATE", "strength": 4},
+    {"from_id": "net-02", "to_id": "net-07", "connection_type": "CLASSMATE", "strength": 5},
+    {"from_id": "net-03", "to_id": "net-06", "connection_type": "ADVISOR", "strength": 4},
+    {"from_id": "net-04", "to_id": "net-10", "connection_type": "CO_INVESTOR", "strength": 4},
+    {"from_id": "net-05", "to_id": "net-09", "connection_type": "CLASSMATE", "strength": 5},
+]
+
+def seed_database():
+    """Seeds the SQLite database with companies, filings, EOD history, concalls, and network graph."""
+    init_db()
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Seed Companies
+        for c in COMPANIES_SEED:
+            cursor.execute("""
+            INSERT OR REPLACE INTO companies (ticker, name, sector, market_cap_tier, market_cap_cr, is_portfolio, screener_slug, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            """, (c["ticker"], c["name"], c["sector"], c["market_cap_tier"], c["market_cap_cr"], c["is_portfolio"], c["screener_slug"], c["description"]))
+
+        # Seed Market EOD
+        for m in MARKET_EOD_SEED:
+            cursor.execute("""
+            INSERT OR REPLACE INTO market_eod (ticker, trade_date, close_price, volume, volume_sma_20d, daily_return_pct, volume_multiple)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+            """, (m["ticker"], m["trade_date"], m["close_price"], m["volume"], m["volume_sma_20d"], m["daily_return_pct"], m["volume_multiple"]))
+
+        # Seed Announcements
+        for a in ANNOUNCEMENTS_SEED:
+            cursor.execute("""
+            INSERT OR REPLACE INTO announcements (id, ticker, category, title, description, filing_time, is_material, materiality_score, headline_metrics, executive_profile, network_connection)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                a["id"],
+                a["ticker"],
+                a["category"],
+                a["title"],
+                a["description"],
+                a["filing_time"],
+                a["is_material"],
+                a["materiality_score"],
+                json.dumps(a["headline_metrics"]) if a["headline_metrics"] else None,
+                json.dumps(a["executive_profile"]) if a["executive_profile"] else None,
+                json.dumps(a["network_connection"]) if a["network_connection"] else None
+            ))
+
+        # Seed Detected Anomalies
+        for anom in ANOMALIES_SEED:
+            cursor.execute("""
+            INSERT OR REPLACE INTO detected_anomalies (id, ticker, anomaly_type, severity, headline, detail, metrics, created_at, is_pinned, is_dismissed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                anom["id"],
+                anom["ticker"],
+                anom["anomaly_type"],
+                anom["severity"],
+                anom["headline"],
+                anom["detail"],
+                json.dumps(anom["metrics"]),
+                anom["created_at"],
+                anom["is_pinned"],
+                anom["is_dismissed"]
+            ))
+
+        # Seed Guidance History
+        for g in GUIDANCE_HISTORY_SEED:
+            cursor.execute("""
+            INSERT INTO guidance_history (ticker, fiscal_quarter, metric, promised_guidance, delivered_actual, variance, status, management_quote, delivery_notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (g["ticker"], g["fiscal_quarter"], g["metric"], g["promised_guidance"], g["delivered_actual"], g["variance"], g["status"], g["management_quote"], g["delivery_notes"]))
+
+        # Seed Concall Transcripts
+        for ct in CONCALL_SEED:
+            cursor.execute("""
+            INSERT OR REPLACE INTO concall_transcripts (id, ticker, fiscal_quarter, transcript_date, management_remarks, guidance_excerpts, analyst_qa_excerpts)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+            """, (ct["id"], ct["ticker"], ct["fiscal_quarter"], ct["transcript_date"], ct["management_remarks"], ct["guidance_excerpts"], ct["analyst_qa_excerpts"]))
+
+        # Seed Network Contacts
+        for nc in NETWORK_CONTACTS_SEED:
+            cursor.execute("""
+            INSERT OR REPLACE INTO network_contacts (id, name, current_title, current_company, current_company_ticker, relationship_strength, is_starred, past_companies, education, themes, relevance_score, recent_development_summary, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                nc["id"],
+                nc["name"],
+                nc["current_title"],
+                nc["current_company"],
+                nc["current_company_ticker"],
+                nc["relationship_strength"],
+                nc["is_starred"],
+                json.dumps(nc["past_companies"]),
+                json.dumps(nc["education"]),
+                json.dumps(nc["themes"]),
+                nc["relevance_score"],
+                nc["recent_development_summary"],
+                nc["notes"]
+            ))
+
+        # Seed Network Relationships
+        for nr in NETWORK_RELATIONSHIPS_SEED:
+            cursor.execute("""
+            INSERT INTO network_relationships (from_contact_id, to_contact_id, connection_type, mutual_strength)
+            VALUES (?, ?, ?, ?);
+            """, (nr["from_id"], nr["to_id"], nr["connection_type"], nr["strength"]))
+
+    print(f"Successfully seeded FINN database with {len(COMPANIES_SEED)} companies, {len(ANNOUNCEMENTS_SEED)} announcements, {len(ANOMALIES_SEED)} anomalies, and {len(NETWORK_CONTACTS_SEED)} network contacts.")
+
+if __name__ == "__main__":
+    seed_database()
