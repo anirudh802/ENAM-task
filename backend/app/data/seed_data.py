@@ -895,6 +895,12 @@ def seed_database():
     with get_db() as conn:
         cursor = conn.cursor()
 
+        # Reset user preferences to defaults
+        cursor.execute("""
+        INSERT OR REPLACE INTO user_preferences (id, volume_multiplier_threshold, price_move_pct_threshold, auto_notify_critical, starred_tickers, enabled_categories)
+        VALUES (1, 2.0, 3.5, 1, '[]', '["results","M&A","management_change","fund_raise","litigation","capex"]');
+        """)
+
         # Seed Companies
         for c in COMPANIES_SEED:
             cursor.execute("""

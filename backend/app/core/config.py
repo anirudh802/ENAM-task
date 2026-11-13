@@ -1,8 +1,10 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     PROJECT_NAME: str = "FINN Financial Investment Agent"
     VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
@@ -24,9 +26,5 @@ class Settings(BaseSettings):
     DEFAULT_VOLUME_MULTIPLIER: float = 2.0
     DEFAULT_PRICE_MOVE_PCT: float = 3.5
     POLLING_INTERVAL_SECONDS: int = 300
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
 
 settings = Settings()
