@@ -256,10 +256,7 @@ class AnomalyDetector:
         """Retrieves the highest-priority pinned critical alert for the specific user."""
         anomalies = AnomalyDetector.get_ranked_anomalies(user_id=user_id, include_dismissed=False)
         for a in anomalies:
-            if a["is_pinned"] and a["severity"] == "CRITICAL":
-                return a
-        for a in anomalies:
-            if a["severity"] == "CRITICAL":
+            if a.get("is_pinned") and a.get("severity") == "CRITICAL":
                 return a
         return None
 
@@ -281,7 +278,7 @@ class AnomalyDetector:
             conn.execute("""
             INSERT INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed)
             VALUES (?, ?, 0, 1)
-            ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_dismissed = 1;
+            ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_dismissed = 1, is_pinned = 0;
             """, (user_id, anomaly_id))
         return True
 

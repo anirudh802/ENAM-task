@@ -745,7 +745,7 @@ def seed_database():
             ))
 
         # 8. Seed Detected Anomalies
-        for anom in ANOMALIES_SEED:
+        for idx, anom in enumerate(ANOMALIES_SEED):
             cursor.execute("""
             INSERT OR REPLACE INTO detected_anomalies (id, isin, ticker, anomaly_type, severity, headline, detail, metrics, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -754,8 +754,8 @@ def seed_database():
                 anom["headline"], anom["detail"], json.dumps(anom["metrics"]), anom["created_at"]
             ))
 
-            # Default alert state for user-enam-01 (F-05)
-            is_pinned = 1 if anom["severity"] == "CRITICAL" else 0
+            # Default alert state for user-enam-01 (F-05): Only the first critical alert is pinned initially
+            is_pinned = 1 if (idx == 0 and anom["severity"] == "CRITICAL") else 0
             cursor.execute("""
             INSERT OR REPLACE INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed, notified_at)
             VALUES ('user-enam-01', ?, ?, 0, ?);

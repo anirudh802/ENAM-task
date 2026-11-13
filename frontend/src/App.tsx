@@ -28,7 +28,17 @@ export function App() {
   // Contact outreach simulation toast
   const [contactToast, setContactToast] = useState<string | null>(null);
 
-  const loadData = async () => {
+  // Track dismissed alerts in session so closed critical cards stay closed
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(() => {
+    try {
+      const saved = sessionStorage.getItem('finn_dismissed_alerts');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const loadInitialData = async () => {
     setIsRefreshing(true);
     try {
       const [dig, pinned, anoms, prefs] = await Promise.all([
@@ -38,7 +48,11 @@ export function App() {
         api.getPreferences(),
       ]);
       setDigest(dig);
-      setPinnedAlert(pinned);
+      if (pinned && !dismissedAlertIds.has(pinned.id)) {
+        setPinnedAlert(pinned);
+      } else {
+        setPinnedAlert(null);
+      }
       setAnomalies(anoms);
       setPreferences(prefs);
     } catch (err) {
@@ -48,14 +62,35 @@ export function App() {
     }
   };
 
+  // Initial mount load
   useEffect(() => {
-    loadData();
+    loadInitialData();
+  }, []);
+
+  // Changing the type of feed in the pulse bar (hours / category) only updates the digest feed!
+  useEffect(() => {
+    const updateDigestFeed = async () => {
+      try {
+        const dig = await api.getDigest(selectedHours, selectedCategory);
+        setDigest(dig);
+      } catch (err) {
+        console.error('Failed to update digest feed:', err);
+      }
+    };
+    updateDigestFeed();
   }, [selectedHours, selectedCategory]);
 
   const handleDismissPinned = async (id: string) => {
     try {
       await api.dismissAlert(id);
       setPinnedAlert(null);
+      setDismissedAlertIds(prev => {
+        const next = new Set(prev).add(id);
+        try {
+          sessionStorage.setItem('finn_dismissed_alerts', JSON.stringify(Array.from(next)));
+        } catch {}
+        return next;
+      });
       setAnomalies(prev => prev.filter(a => a.id !== id));
     } catch (err) {
       console.error('Failed to dismiss alert:', err);
@@ -86,7 +121,7 @@ export function App() {
       const updated = await api.updatePreferences(volume, price, true);
       setPreferences(updated);
       await api.runPipeline();
-      await loadData();
+      await loadInitialData();
     } catch (err) {
       console.error('Failed to update preferences:', err);
     }
@@ -123,7 +158,7 @@ export function App() {
         <Navbar
           isPhoneFrame={isPhoneFrame}
           setIsPhoneFrame={setIsPhoneFrame}
-          onRefresh={loadData}
+          onRefresh={loadInitialData}
           isRefreshing={isRefreshing}
         />
 
