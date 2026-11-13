@@ -9,7 +9,7 @@ import {
   SecondDegreePath,
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = window.location.port === '5173' ? 'http://127.0.0.1:8000/api' : '/api';
 
 export const api = {
   // Health

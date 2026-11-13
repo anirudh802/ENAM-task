@@ -25,6 +25,13 @@ export const RadarView: React.FC<RadarViewProps> = ({
     preferences?.price_move_pct_threshold || 3.5
   );
 
+  // Live preview matching anomalies count
+  const matchingCount = anomalies.filter((a) => {
+    const vol = a.metrics?.volume_multiple || 1.0;
+    const price = Math.abs(a.metrics?.daily_return_pct || 0);
+    return vol >= volMultiplier || price >= priceMove;
+  }).length;
+
   const getSeverityBadge = (sev: string) => {
     switch (sev) {
       case 'CRITICAL':
@@ -80,7 +87,8 @@ export const RadarView: React.FC<RadarViewProps> = ({
               />
               <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
                 <span>1.5x (Sensitive)</span>
-                <span>3.0x (Standard)</span>
+                <span>2.0x (Standard / Default)</span>
+                <span>3.5x (High)</span>
                 <span>5.0x (Extreme)</span>
               </div>
             </div>
@@ -101,9 +109,15 @@ export const RadarView: React.FC<RadarViewProps> = ({
               />
               <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
                 <span>±2.0%</span>
+                <span>±3.5% (Standard)</span>
                 <span>±5.0%</span>
                 <span>±10.0%</span>
               </div>
+            </div>
+
+            {/* Live Filter Counter */}
+            <div className="text-[11px] text-blue-700 dark:text-blue-300 font-semibold text-center bg-blue-50/80 dark:bg-blue-950/40 p-2 rounded-lg border border-blue-200/60 dark:border-blue-800/40">
+              📊 Live Threshold Preview: <span className="underline">{matchingCount} of {anomalies.length}</span> alerts match these settings
             </div>
 
             <button
@@ -111,7 +125,7 @@ export const RadarView: React.FC<RadarViewProps> = ({
                 onUpdatePreferences(volMultiplier, priceMove);
                 setShowConfig(false);
               }}
-              className="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition"
+              className="w-full min-h-[44px] py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition shadow-sm flex items-center justify-center"
             >
               Apply Sensitivity Settings
             </button>
@@ -130,8 +144,8 @@ export const RadarView: React.FC<RadarViewProps> = ({
                 : ''
             }`}
           >
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getSeverityBadge(
                     anom.severity
@@ -151,17 +165,22 @@ export const RadarView: React.FC<RadarViewProps> = ({
               <button
                 onClick={() => onTogglePin(anom.id, !anom.is_pinned)}
                 title={anom.is_pinned ? 'Unpin from top' : 'Pin to top'}
-                className={`p-1 rounded-md transition ${
+                className={`min-w-[36px] min-h-[36px] flex items-center justify-center rounded-md transition ${
                   anom.is_pinned
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
-                <Pin className={`w-3.5 h-3.5 ${anom.is_pinned ? 'fill-current' : ''}`} />
+                <Pin className={`w-4 h-4 ${anom.is_pinned ? 'fill-current' : ''}`} />
               </button>
             </div>
 
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-1">
+            {/* Exact Timestamp & Exchange Tag */}
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-1.5">
+              📍 NSE • {anom.metrics?.as_of || '2026-11-12 15:30 IST (EOD)'}
+            </div>
+
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white mb-1 leading-snug">
               {anom.headline}
             </h4>
             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2.5">
@@ -169,28 +188,40 @@ export const RadarView: React.FC<RadarViewProps> = ({
             </p>
 
             {/* Metrics Chips & Action */}
-            <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2 text-[10px]">
+            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-[10px] flex-wrap">
                 {anom.metrics?.volume_multiple && (
-                  <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
                     {anom.metrics.volume_multiple}x Vol
                   </span>
                 )}
                 {anom.metrics?.daily_return_pct !== undefined && (
                   <span
-                    className={`font-semibold ${
-                      anom.metrics.daily_return_pct >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                    className={`font-semibold px-1.5 py-0.5 rounded ${
+                      anom.metrics.daily_return_pct >= 0
+                        ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        : 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300'
                     }`}
                   >
                     {anom.metrics.daily_return_pct >= 0 ? '+' : ''}
                     {anom.metrics.daily_return_pct}%
                   </span>
                 )}
+                {anom.metrics?.z_score !== undefined && (
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">
+                    Z: {anom.metrics.z_score > 0 ? `+${anom.metrics.z_score.toFixed(1)}` : anom.metrics.z_score.toFixed(1)}σ
+                  </span>
+                )}
+                {anom.metrics?.sigma_60d !== undefined && (
+                  <span className="text-slate-500 dark:text-slate-400">
+                    60d σ: {anom.metrics.sigma_60d}%
+                  </span>
+                )}
               </div>
 
               <button
                 onClick={() => onInvestigateTicker(anom.ticker)}
-                className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-0.5"
+                className="min-h-[44px] px-3 py-1 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 shrink-0"
               >
                 <span>DeepDive</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />

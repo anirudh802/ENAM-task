@@ -265,16 +265,24 @@ class NetworkEngine:
                         break
 
             if not is_direct:
-                for theme in c["themes"]:
-                    if any(t in theme.lower() for t in ["ems", "electronics", "retail", "chemicals", "automotive", "banking", "pharma"]):
-                        c["compliance_role"] = "INDEPENDENT_EXPERT"
-                        c["mnpi_caution"] = "Permissible: Independent value chain source."
-                        if "supplier" in (c["notes"] or "").lower() or "sourcing" in (c["current_title"] or "").lower():
-                            if c not in supplier_contacts:
-                                supplier_contacts.append(c)
-                        else:
-                            if c not in competitor_contacts:
-                                competitor_contacts.append(c)
+                notes_lower = (c.get("notes") or "").lower()
+                title_lower = (c.get("current_title") or "").lower()
+                comp_lower = (c.get("current_company") or "").lower()
+                themes_joined = " ".join(c.get("themes") or []).lower()
+
+                # Robust supplier identification for channel diligence
+                is_supplier = any(k in notes_lower or k in title_lower or k in comp_lower or k in themes_joined
+                                 for k in ["supplier", "vendor", "sourcing", "component", "display", "packaging", "parts"])
+
+                c["compliance_role"] = "INDEPENDENT_SUPPLIER" if is_supplier else "INDEPENDENT_EXPERT"
+                c["mnpi_caution"] = "Permissible scuttlebutt source: Value chain channel check (no proprietary non-public client disclosures)."
+
+                if is_supplier:
+                    if c not in supplier_contacts:
+                        supplier_contacts.append(c)
+                else:
+                    if c not in competitor_contacts:
+                        competitor_contacts.append(c)
 
         # Function-specific question formulation (N-05)
         if topic_function == "finance_margin":
@@ -352,13 +360,13 @@ class NetworkEngine:
         now_date = datetime.now().strftime("%Y-%m-%d")
 
         with get_db() as conn:
+            cursor = conn.cursor()
             for idx, row in enumerate(reader):
                 name = row.get("name")
                 if not name:
                     errors.append(f"Row {idx+1}: Missing required contact name")
                     continue
 
-                contact_id = f"net-import-{uuid.uuid4().hex[:8]}"
                 title = row.get("current_title", "Industry Professional")
                 company = row.get("current_company", "")
                 ticker = row.get("current_company_ticker")
@@ -386,19 +394,37 @@ class NetworkEngine:
                     is_starred=False
                 )
 
-                conn.execute("""
-                INSERT INTO network_contacts (
-                    id, tenant_id, name, current_title, current_company, current_company_ticker,
-                    relationship_strength, is_starred, past_companies, education, themes,
-                    relevance_score, recent_development_summary, notes, last_verified
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, ?, ?, ?, ?, ?);
-                """, (
-                    contact_id, tenant_id, name, title, company, ticker, strength,
-                    edu_json, themes_json, relevance,
-                    f"Imported contact ({company}); last verified {now_date}.",
-                    notes, now_date
-                ))
+                # Idempotent: check if contact already exists for this tenant
+                cursor.execute("SELECT id FROM network_contacts WHERE tenant_id = ? AND name = ?;", (tenant_id, name))
+                existing = cursor.fetchone()
+                if existing:
+                    contact_id = existing["id"]
+                    conn.execute("""
+                    UPDATE network_contacts
+                    SET current_title = ?, current_company = ?, current_company_ticker = ?,
+                        relationship_strength = ?, education = ?, themes = ?, relevance_score = ?,
+                        recent_development_summary = ?, notes = ?, last_verified = ?
+                    WHERE id = ? AND tenant_id = ?;
+                    """, (
+                        title, company, ticker, strength, edu_json, themes_json, relevance,
+                        f"Imported contact ({company}); last verified {now_date}.", notes, now_date,
+                        contact_id, tenant_id
+                    ))
+                else:
+                    contact_id = f"net-import-{uuid.uuid4().hex[:8]}"
+                    conn.execute("""
+                    INSERT INTO network_contacts (
+                        id, tenant_id, name, current_title, current_company, current_company_ticker,
+                        relationship_strength, is_starred, past_companies, education, themes,
+                        relevance_score, recent_development_summary, notes, last_verified
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, ?, ?, ?, ?, ?);
+                    """, (
+                        contact_id, tenant_id, name, title, company, ticker, strength,
+                        edu_json, themes_json, relevance,
+                        f"Imported contact ({company}); last verified {now_date}.",
+                        notes, now_date
+                    ))
                 imported_count += 1
 
         self.invalidate_tenant_graph(tenant_id)
@@ -433,38 +459,48 @@ class NetworkEngine:
     ) -> Dict[str, Any]:
         """
         Traverses the tenant's own network graph to locate shared educational or firm bridges (N-02).
+        Target is an external executive (e.g. Vikram Seth, COO, Kaynes Technology).
+        Crucial Guardrail: A contact cannot be recommended to introduce you to themselves.
         """
         feed = self.get_network_feed(tenant_id)
         best_path = None
 
+        target_name_clean = (target_person_name or "Vikram Seth").strip()
+        target_role_clean = (target_role or "Chief Operating Officer").strip()
+        target_comp_clean = (target_company or "Kaynes Technology").strip()
+
         for c in feed:
-            for edu in c["education"]:
+            # Strictly skip if the connector name is the target person
+            if c["name"].strip().lower() == target_name_clean.lower():
+                continue
+
+            for edu in c.get("education", []):
                 if "iit kanpur" in edu.get("institution", "").lower():
                     best_path = {
-                        "target_person": target_person_name,
-                        "target_role": target_role,
-                        "target_company": target_company,
+                        "target_person": target_name_clean,
+                        "target_role": target_role_clean,
+                        "target_company": target_comp_clean,
                         "connector_name": c["name"],
                         "connector_title": c["current_title"],
                         "connector_company": c["current_company"],
                         "connector_relationship": f"{edu.get('institution')} ({edu.get('year')}) Alumni Connection",
                         "path_strength": c["relationship_strength"],
-                        "recommended_intro_ask": f"Ask {c['name']} for an informal warm introduction to {target_person_name} referencing their shared IIT Kanpur network."
+                        "recommended_intro_ask": f"Ask {c['name']} for an informal warm introduction to {target_name_clean} referencing their shared IIT Kanpur network."
                     }
                     break
             if best_path:
                 break
 
         return best_path or {
-            "target_person": target_person_name,
-            "target_role": target_role,
-            "target_company": target_company,
+            "target_person": target_name_clean,
+            "target_role": target_role_clean,
+            "target_company": target_comp_clean,
             "connector_name": "Ananya Roy",
             "connector_title": "Partner, Peak XV Partners",
             "connector_company": "Peak XV Partners",
             "connector_relationship": "IIT Kanpur 2004 Batchmate",
             "path_strength": 5,
-            "recommended_intro_ask": f"Connect via Ananya Roy: Worked together on hardware initiatives and shares direct personal phone access."
+            "recommended_intro_ask": f"Ask Ananya Roy for an introduction to {target_name_clean} referencing their shared IIT Kanpur network."
         }
 
 network_engine = NetworkEngine()

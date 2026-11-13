@@ -23,6 +23,21 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
 }) => {
   const [showRoutine, setShowRoutine] = useState(false);
 
+  const formatFilingDate = (isoTime: string) => {
+    try {
+      const dt = new Date(isoTime);
+      if (isNaN(dt.getTime())) return isoTime;
+      const yyyy = dt.getFullYear();
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const min = String(dt.getMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${min} IST`;
+    } catch {
+      return isoTime;
+    }
+  };
+
   const categories = [
     { id: 'all', label: 'All Feeds' },
     { id: 'results', label: 'Results' },
@@ -146,11 +161,18 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
 
                 <button
                   onClick={() => onSelectTicker(filing.ticker)}
-                  className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
                   title="DeepDive research"
                 >
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* Timestamp & Exchange Tag */}
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-1.5 flex items-center gap-1.5">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">NSE / BSE</span>
+                <span>•</span>
+                <span>Filing Date: {formatFilingDate(filing.filing_time)}</span>
               </div>
 
               {/* Title & Description */}
@@ -227,7 +249,7 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
                   {onCallContact && (
                     <button
                       onClick={() => onCallContact(filing.network_connection!.connected_person_name)}
-                      className="px-2 py-1 rounded bg-purple-600 text-white text-[10px] font-semibold hover:bg-purple-700 active:scale-95 transition"
+                      className="min-h-[44px] px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 active:scale-95 transition flex items-center justify-center shrink-0 shadow-sm"
                     >
                       Connect
                     </button>

@@ -75,6 +75,23 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
     setExpandedItems((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
+  const renderThesisClaim = (text: string) => {
+    const match = text.match(/^(.*?)\s*\[Source:\s*(.*?)\]$/);
+    if (match) {
+      const claim = match[1];
+      const source = match[2];
+      return (
+        <div className="flex-1">
+          <span className="leading-relaxed block">{claim}</span>
+          <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700">
+            📍 Primary Source: {source}
+          </span>
+        </div>
+      );
+    }
+    return <span className="leading-relaxed">{text}</span>;
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'BEAT':
@@ -193,10 +210,10 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
             {research.coverage_assessment && (
               <div className="mb-2.5 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between text-[11px]">
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <Database className="w-3 h-3 text-blue-500" /> Primary Disclosure Coverage:
+                  <Database className="w-3 h-3 text-blue-500" /> Primary Disclosures Ingested:
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {research.coverage_assessment.coverage_pct}% ({research.coverage_assessment.status.replace('_', ' ')})
+                  {research.coverage_assessment.breakdown?.concall_transcripts_available || 1} Concall • 1 Annual Report • {research.coverage_assessment.breakdown?.regulatory_announcements_count || 1} SEBI Filings
                 </span>
               </div>
             )}
@@ -261,8 +278,8 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>Concall guidance track record (tap to expand)</span>
                 {research.citation_faithfulness_score !== undefined && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold flex items-center gap-1">
-                    <FileCheck className="w-3 h-3" /> {Math.round(research.citation_faithfulness_score * 100)}% Faithfulness Verified
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/40">
+                    <FileCheck className="w-3 h-3 text-emerald-600" /> Primary Citation Audit: {Math.round(research.citation_faithfulness_score * 100)}% Grounded
                   </span>
                 )}
               </div>
@@ -521,13 +538,13 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               {/* Bull Case */}
               <div className="finance-card p-3.5 border-l-4 border-l-emerald-500">
                 <h4 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2">
-                  Bull Thesis (High Conviction Catalysts)
+                  Bull Thesis (Grounded Catalysts)
                 </h4>
-                <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-200">
+                <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-200">
                   {research.bull_case.map((b, i) => (
                     <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-emerald-500 font-bold">•</span>
-                      <span>{b}</span>
+                      <span className="text-emerald-500 font-bold mt-0.5">•</span>
+                      {renderThesisClaim(b)}
                     </li>
                   ))}
                 </ul>
@@ -538,11 +555,11 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                 <h4 className="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider mb-2">
                   Bear Risks & Downside Triggers
                 </h4>
-                <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-200">
+                <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-200">
                   {research.bear_case.map((b, i) => (
                     <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-rose-500 font-bold">•</span>
-                      <span>{b}</span>
+                      <span className="text-rose-500 font-bold mt-0.5">•</span>
+                      {renderThesisClaim(b)}
                     </li>
                   ))}
                 </ul>

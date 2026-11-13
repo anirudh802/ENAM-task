@@ -334,8 +334,57 @@ class AnomalyDetector:
                 # As of freshness timestamp (P-06)
                 as_of_timestamp = f"{trade_date} 15:30 IST (EOD)"
 
-                # --- Volume Surge Evaluation ---
-                if vol_mult >= vol_threshold:
+                is_vol_surge = (vol_mult >= vol_threshold)
+                price_condition = (abs(effective_ret_pct) >= price_threshold or abs(z_score) >= 2.5)
+
+                # --- Consolidated Dual Technical Anomaly (Consolidates volume surge + price breakout) ---
+                if is_vol_surge and price_condition:
+                    allowed, reason = AnomalyDetector.check_fatigue_and_cooldown(
+                        ticker, "DUAL_TECHNICAL_SURGE", daily_cap, conn
+                    )
+                    if allowed:
+                        anomaly_id = f"anom-dual-{ticker.split('.')[0].lower()}-{trade_date}"
+                        direction = "Breakout" if effective_ret_pct > 0 else "Plunge"
+                        severity = "CRITICAL" if (vol_mult >= 3.0 or abs(z_score) >= 3.0) and not is_expected_spike else "HIGH"
+
+                        headline = f"{name}: {effective_ret_pct:+.1f}% Price {direction} on {vol_mult}x Volume"
+                        detail = f"Dual technical move: Traded volume reached {vol_mult}x 20-day SMA alongside {effective_ret_pct:+.2f}% return (Z-score: {z_score:+.1f}σ, 60-day σ: {std_60d}%)."
+                        if is_ca_adjusted:
+                            detail += f" [{ca_desc}]"
+                        if is_expected_spike:
+                            detail += f" [Tagged: {expected_reason}]"
+
+                        metrics = {
+                            "volume_multiple": vol_mult,
+                            "daily_return_pct": effective_ret_pct,
+                            "raw_return_pct": raw_ret_pct,
+                            "z_score": z_score,
+                            "sigma_60d": std_60d,
+                            "close": close_px,
+                            "as_of": as_of_timestamp,
+                            "is_corporate_action_adjusted": is_ca_adjusted,
+                            "is_expected_event_spike": is_expected_spike
+                        }
+
+                        cursor.execute("""
+                        INSERT OR REPLACE INTO detected_anomalies (id, isin, ticker, anomaly_type, severity, headline, detail, metrics, created_at)
+                        VALUES (?, ?, ?, 'DUAL_TECHNICAL_SURGE', ?, ?, ?, ?, ?);
+                        """, (
+                            anomaly_id, isin, ticker, severity, headline, detail,
+                            json.dumps(metrics), datetime.now().isoformat()
+                        ))
+
+                        if severity == "CRITICAL":
+                            cursor.execute("""
+                            INSERT INTO user_alert_state (user_id, anomaly_id, is_pinned, is_dismissed)
+                            VALUES (?, ?, 1, 0)
+                            ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
+                            """, (user_id, anomaly_id))
+
+                        new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
+
+                # --- Single-Factor Volume Surge Evaluation ---
+                elif is_vol_surge:
                     allowed, reason = AnomalyDetector.check_fatigue_and_cooldown(
                         ticker, "VOLUME_SURGE", daily_cap, conn
                     )
@@ -346,7 +395,7 @@ class AnomalyDetector:
                             severity = "HIGH"
 
                         headline = f"{name}: {vol_mult}x Volume Surge ({effective_ret_pct:+.1f}%)"
-                        detail = f"Traded volume reached {vol_mult}x 20-day SMA. Daily return: {effective_ret_pct:+.2f}% (Z-score: {z_score:+.1f}σ)."
+                        detail = f"Traded volume reached {vol_mult}x 20-day SMA. Daily return: {effective_ret_pct:+.2f}% (Z-score: {z_score:+.1f}σ, 60-day σ: {std_60d}%)."
                         if is_expected_spike:
                             detail += f" [Tagged: {expected_reason}]"
 
@@ -355,6 +404,7 @@ class AnomalyDetector:
                             "daily_return_pct": effective_ret_pct,
                             "raw_return_pct": raw_ret_pct,
                             "z_score": z_score,
+                            "sigma_60d": std_60d,
                             "close": close_px,
                             "as_of": as_of_timestamp,
                             "is_corporate_action_adjusted": is_ca_adjusted,
@@ -378,9 +428,8 @@ class AnomalyDetector:
 
                         new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 
-                # --- Price Breakout Evaluation (Normalized & CA Adjusted) ---
-                price_condition = abs(effective_ret_pct) >= price_threshold or abs(z_score) >= 2.5
-                if price_condition:
+                # --- Single-Factor Price Breakout Evaluation (Normalized & CA Adjusted) ---
+                elif price_condition:
                     allowed, reason = AnomalyDetector.check_fatigue_and_cooldown(
                         ticker, "PRICE_BREAKOUT", daily_cap, conn
                     )
@@ -422,6 +471,8 @@ class AnomalyDetector:
                             VALUES (?, ?, 1, 0)
                             ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
                             """, (user_id, anomaly_id))
+
+                        new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 
                         new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 

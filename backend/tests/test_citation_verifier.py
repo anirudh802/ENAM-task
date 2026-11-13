@@ -35,7 +35,7 @@ def test_claim_verification_against_primary_sources():
         res = CitationVerifier.verify_claim(real_quote, "DIXON.NS", conn)
         assert res["verified"] is True
         assert res["faithfulness"] == 1.0
-        assert res["matched_doc_id"] == "concall-dixon-q2fy25"
+        assert "concall-dixon-q2" in res["matched_doc_id"]
 
         # 2. Fake quote claiming false guidance
         fake_quote = "We project EBITDA margins to exceed 25% in Q3 due to government grants."

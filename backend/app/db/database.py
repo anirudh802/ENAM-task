@@ -5,8 +5,11 @@ from contextlib import contextmanager
 
 DB_PATH = os.environ.get("FINN_DB_PATH", str(Path(__file__).resolve().parent.parent.parent / "finn.db"))
 
+def get_db_path() -> str:
+    return os.environ.get("FINN_DB_PATH", DB_PATH)
+
 def get_db_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     # Enable WAL mode for high concurrency between background writer and API readers
     conn.execute("PRAGMA journal_mode=WAL;")
