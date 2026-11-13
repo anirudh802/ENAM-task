@@ -1,6 +1,6 @@
 import sqlite3
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from app.db.database import get_db
 
 try:
@@ -15,10 +15,10 @@ class MarketDataService:
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-            SELECT trade_date, close_price, volume, volume_sma_20d, daily_return_pct, volume_multiple
-            FROM market_eod
-            WHERE ticker = ?
-            ORDER BY trade_date DESC LIMIT 1;
+            SELECT m.trade_date, m.close_price, m.volume, m.volume_sma_20d, m.daily_return_pct, m.volume_multiple, m.isin
+            FROM market_eod m
+            WHERE m.ticker = ?
+            ORDER BY m.trade_date DESC LIMIT 1;
             """, (ticker,))
             row = cursor.fetchone()
             if row:
@@ -28,7 +28,7 @@ class MarketDataService:
     @staticmethod
     def fetch_live_or_cached_eod(ticker: str) -> Dict[str, Any]:
         """
-        Attempts to fetch the latest price and volume from yfinance.
+        Attempts to fetch latest price and volume from yfinance.
         If unavailable, rate-limited, or offline, falls back seamlessly to the cached database record.
         """
         cached = MarketDataService.get_latest_eod(ticker)
@@ -37,7 +37,6 @@ class MarketDataService:
             return cached or MarketDataService._default_market_metrics(ticker)
 
         try:
-            # Indian tickers on Yahoo Finance use .NS for National Stock Exchange
             yf_ticker = ticker if ticker.endswith(".NS") or ticker.endswith(".BO") else f"{ticker}.NS"
             stock = yf.Ticker(yf_ticker)
             hist = stock.history(period="1mo")
@@ -51,17 +50,21 @@ class MarketDataService:
                 volume = int(latest["Volume"])
                 daily_return_pct = round(((close_price - prev_close) / prev_close) * 100, 2)
 
-                # Compute 20-day SMA of volume
                 sma_20d = float(hist["Volume"].tail(20).mean()) if len(hist) >= 5 else volume
                 volume_multiple = round(volume / sma_20d, 2) if sma_20d > 0 else 1.0
                 trade_date = str(latest.name.date())
 
-                # Upsert into SQLite
+                # Lookup ISIN
                 with get_db() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT isin FROM companies WHERE ticker = ?;", (ticker,))
+                    c_row = cursor.fetchone()
+                    isin = c_row["isin"] if c_row else f"IN_UNKNOWN_{ticker}"
+
                     conn.execute("""
-                    INSERT OR REPLACE INTO market_eod (ticker, trade_date, close_price, volume, volume_sma_20d, daily_return_pct, volume_multiple)
-                    VALUES (?, ?, ?, ?, ?, ?, ?);
-                    """, (ticker, trade_date, close_price, volume, sma_20d, daily_return_pct, volume_multiple))
+                    INSERT OR REPLACE INTO market_eod (isin, ticker, trade_date, close_price, volume, volume_sma_20d, daily_return_pct, volume_multiple)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                    """, (isin, ticker, trade_date, close_price, volume, sma_20d, daily_return_pct, volume_multiple))
 
                 return {
                     "trade_date": trade_date,
@@ -72,7 +75,6 @@ class MarketDataService:
                     "volume_multiple": volume_multiple
                 }
         except Exception:
-            # Graceful fallback to cached data
             pass
 
         return cached or MarketDataService._default_market_metrics(ticker)

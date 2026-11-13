@@ -3,29 +3,35 @@ import networkx as nx
 from typing import List, Dict, Any, Optional
 from app.db.database import get_db
 
+DEFAULT_TENANT_ID = "tenant-enam-01"
+
 class NetworkEngine:
     def __init__(self):
-        self.graph = nx.Graph()
-        self._build_graph()
+        # Cache of tenant_id -> nx.Graph
+        self._tenant_graphs: Dict[str, nx.Graph] = {}
 
-    def _build_graph(self):
-        """Initializes in-memory NetworkX graph from tenant SQLite tables."""
-        self.graph.clear()
+    def _get_or_build_graph(self, tenant_id: str = DEFAULT_TENANT_ID) -> nx.Graph:
+        """Retrieves or builds tenant-isolated in-memory NetworkX graph."""
+        if tenant_id in self._tenant_graphs:
+            return self._tenant_graphs[tenant_id]
+
+        g = nx.Graph()
         with get_db() as conn:
             cursor = conn.cursor()
 
-            # 1. Fetch Contacts
+            # 1. Fetch Tenant-Scoped Contacts (F-02, F-03)
             cursor.execute("""
             SELECT id, name, current_title, current_company, current_company_ticker,
                    relationship_strength, is_starred, past_companies, education, themes,
                    relevance_score, recent_development_summary, notes
-            FROM network_contacts;
-            """)
+            FROM network_contacts
+            WHERE tenant_id = ?;
+            """, (tenant_id,))
             contacts = cursor.fetchall()
 
             for c in contacts:
                 contact_id = c["id"]
-                self.graph.add_node(
+                g.add_node(
                     contact_id,
                     node_type="PERSON",
                     name=c["name"],
@@ -41,59 +47,70 @@ class NetworkEngine:
                 # Add Current Company Edge
                 curr_comp = c["current_company"]
                 if curr_comp:
-                    self.graph.add_node(curr_comp, node_type="COMPANY")
-                    self.graph.add_edge(contact_id, curr_comp, relationship="WORKS_AT", strength=c["relationship_strength"])
+                    g.add_node(curr_comp, node_type="COMPANY")
+                    g.add_edge(contact_id, curr_comp, relationship="WORKS_AT", strength=c["relationship_strength"])
 
                 # Add Past Companies Edges
                 past_comps = json.loads(c["past_companies"] or "[]")
                 for p in past_comps:
                     p_name = p.get("company")
                     if p_name:
-                        self.graph.add_node(p_name, node_type="COMPANY")
-                        self.graph.add_edge(contact_id, p_name, relationship="EX_EMPLOYEE_OF", role=p.get("role"))
+                        g.add_node(p_name, node_type="COMPANY")
+                        g.add_edge(contact_id, p_name, relationship="EX_EMPLOYEE_OF", role=p.get("role"))
 
                 # Add Education Edges
                 edu_list = json.loads(c["education"] or "[]")
                 for e in edu_list:
                     inst = e.get("institution")
                     if inst:
-                        self.graph.add_node(inst, node_type="INSTITUTION")
-                        self.graph.add_edge(contact_id, inst, relationship="ALUMNUS_OF", year=e.get("year"))
+                        g.add_node(inst, node_type="INSTITUTION")
+                        g.add_edge(contact_id, inst, relationship="ALUMNUS_OF", year=e.get("year"))
 
-            # 2. Fetch Relationships between Contacts
-            cursor.execute("SELECT from_contact_id, to_contact_id, connection_type, mutual_strength FROM network_relationships;")
+            # 2. Fetch Tenant Relationships
+            cursor.execute("""
+            SELECT from_contact_id, to_contact_id, connection_type, mutual_strength
+            FROM network_relationships
+            WHERE tenant_id = ?;
+            """, (tenant_id,))
             rels = cursor.fetchall()
             for r in rels:
-                if self.graph.has_node(r["from_contact_id"]) and self.graph.has_node(r["to_contact_id"]):
-                    self.graph.add_edge(
+                if g.has_node(r["from_contact_id"]) and g.has_node(r["to_contact_id"]):
+                    g.add_edge(
                         r["from_contact_id"],
                         r["to_contact_id"],
                         relationship=r["connection_type"],
                         strength=r["mutual_strength"]
                     )
 
-    def get_network_feed(self) -> List[Dict[str, Any]]:
+        self._tenant_graphs[tenant_id] = g
+        return g
+
+    def invalidate_tenant_graph(self, tenant_id: str = DEFAULT_TENANT_ID):
+        self._tenant_graphs.pop(tenant_id, None)
+
+    def get_network_feed(self, tenant_id: str = DEFAULT_TENANT_ID) -> List[Dict[str, Any]]:
         """
-        Returns contacts prioritized for the investor:
-        1. Starred contacts pinned at the very top.
-        2. Followed by contacts ranked by dynamic relevance score (descending).
-        Each contact includes their concise 1-2 line summary of recent developments.
+        Returns tenant-isolated contacts prioritized for the investor:
+        1. Starred contacts pinned at top.
+        2. Relevance-ranked feed with 1-2 line recent development summaries.
         """
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-            SELECT id, name, current_title, current_company, current_company_ticker,
+            SELECT id, tenant_id, name, current_title, current_company, current_company_ticker,
                    relationship_strength, is_starred, past_companies, education, themes,
                    relevance_score, recent_development_summary, notes
             FROM network_contacts
+            WHERE tenant_id = ?
             ORDER BY is_starred DESC, relevance_score DESC;
-            """)
+            """, (tenant_id,))
             rows = cursor.fetchall()
 
         contacts = []
         for r in rows:
             contacts.append({
                 "id": r["id"],
+                "tenant_id": r["tenant_id"],
                 "name": r["name"],
                 "current_title": r["current_title"],
                 "current_company": r["current_company"],
@@ -109,27 +126,20 @@ class NetworkEngine:
             })
         return contacts
 
-    def toggle_star(self, contact_id: str) -> bool:
-        """Toggles the starred status of a contact."""
+    def toggle_star(self, contact_id: str, tenant_id: str = DEFAULT_TENANT_ID) -> bool:
+        """Toggles starred status on tenant-scoped contact."""
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT is_starred FROM network_contacts WHERE id = ?;", (contact_id,))
+            cursor.execute("SELECT is_starred FROM network_contacts WHERE id = ? AND tenant_id = ?;", (contact_id, tenant_id))
             row = cursor.fetchone()
             if row:
                 new_status = 0 if row["is_starred"] else 1
-                conn.execute("UPDATE network_contacts SET is_starred = ? WHERE id = ?;", (new_status, contact_id))
-                self._build_graph()
+                conn.execute("UPDATE network_contacts SET is_starred = ? WHERE id = ? AND tenant_id = ?;", (new_status, contact_id, tenant_id))
+                self.invalidate_tenant_graph(tenant_id)
                 return bool(new_status)
         return False
 
-    def get_who_to_call(self, ticker: str) -> Dict[str, Any]:
-        """
-        Surfaces network intelligence for a target company:
-        - Direct contacts (current/former employees)
-        - Competitor contacts (peers in same sector)
-        - Supplier / Client contacts
-        - High-density suggested questions
-        """
+    def get_who_to_call(self, ticker: str, tenant_id: str = DEFAULT_TENANT_ID) -> Dict[str, Any]:
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT name, sector FROM companies WHERE ticker = ?;", (ticker,))
@@ -140,16 +150,13 @@ class NetworkEngine:
             comp_name = comp_row["name"]
             sector = comp_row["sector"]
 
-        feed = self.get_network_feed()
+        feed = self.get_network_feed(tenant_id)
         direct_contacts = []
         competitor_contacts = []
         supplier_contacts = []
-
-        # Ticker keyword matching
         ticker_clean = ticker.split(".")[0].lower()
 
         for c in feed:
-            # Check current or past company overlap
             is_direct = False
             if c["current_company_ticker"] == ticker or ticker_clean in (c["current_company"] or "").lower():
                 direct_contacts.append(c)
@@ -162,7 +169,6 @@ class NetworkEngine:
                         break
 
             if not is_direct:
-                # Check thematic / sector overlap for competitors and suppliers
                 for theme in c["themes"]:
                     if any(t in theme.lower() for t in ["ems", "electronics", "retail", "chemicals", "automotive", "banking", "pharma"]):
                         if "supplier" in (c["notes"] or "").lower() or "sourcing" in (c["current_title"] or "").lower():
@@ -172,7 +178,6 @@ class NetworkEngine:
                             if c not in competitor_contacts:
                                 competitor_contacts.append(c)
 
-        # Generate targeted questions based on sector
         suggested_questions = [
             f"What is the actual capacity utilization and floor yield rate for {comp_name} vs guided numbers?",
             "How sustainable are the reported EBITDA margins given raw material inflation pass-through?",
@@ -189,17 +194,11 @@ class NetworkEngine:
             "suggested_questions": suggested_questions
         }
 
-    def get_second_degree_reach(self, target_person_name: str, target_role: str, target_company: str) -> Dict[str, Any]:
-        """
-        Calculates second-degree reach path from the investor to an external executive
-        through known 1st-degree network contacts.
-        """
-        # Search if target person has an educational or company overlap with any contact
-        feed = self.get_network_feed()
+    def get_second_degree_reach(self, target_person_name: str, target_role: str, target_company: str, tenant_id: str = DEFAULT_TENANT_ID) -> Dict[str, Any]:
+        feed = self.get_network_feed(tenant_id)
         best_path = None
 
         for c in feed:
-            # Check IIT Kanpur alumni overlap
             for edu in c["education"]:
                 if "iit kanpur" in edu.get("institution", "").lower():
                     best_path = {
@@ -229,5 +228,4 @@ class NetworkEngine:
             "recommended_intro_ask": f"Connect via Ananya Roy: Worked together on hardware initiatives and shares direct personal phone access."
         }
 
-# Global singleton
 network_engine = NetworkEngine()

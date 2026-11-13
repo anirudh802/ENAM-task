@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Header
 from typing import List, Dict, Any, Optional
 from app.db.database import get_db
 from app.services.market_data import MarketDataService
 from app.services.filings_engine import FilingsEngine
-from app.services.anomaly_detector import AnomalyDetector
+from app.services.anomaly_detector import AnomalyDetector, DEFAULT_USER_ID, DEFAULT_TENANT_ID
 from app.services.network_engine import network_engine
 from app.services.research_engine import ResearchEngine
 from app.services.push_notifications import PushNotificationService
@@ -22,21 +22,35 @@ def health_check():
         "database": "connected"
     }
 
-# --- Companies & Portfolio ---
+# --- Companies & Tenant Portfolio (F-04, F-06) ---
 @router.get("/companies")
-def get_companies(portfolio_only: bool = False):
+def get_companies(
+    portfolio_only: bool = False,
+    tenant_id: str = Query(DEFAULT_TENANT_ID, description="Tenant ID context")
+):
     with get_db() as conn:
         cursor = conn.cursor()
-        query = "SELECT ticker, name, sector, market_cap_tier, market_cap_cr, is_portfolio, screener_slug, description FROM companies"
+        # Query companies and check tenant_holdings for portfolio status (F-04)
+        query = """
+        SELECT c.isin, c.ticker, c.name, c.sector, c.market_cap_tier, c.market_cap_cr,
+               c.screener_slug, c.description,
+               CASE WHEN th.isin IS NOT NULL THEN 1 ELSE 0 END as is_portfolio
+        FROM companies c
+        LEFT JOIN tenant_holdings th ON c.isin = th.isin AND th.tenant_id = ?
+        """
+        params: List[Any] = [tenant_id]
+
         if portfolio_only:
-            query += " WHERE is_portfolio = 1"
-        query += " ORDER BY is_portfolio DESC, market_cap_cr DESC;"
-        cursor.execute(query)
+            query += " WHERE th.isin IS NOT NULL"
+
+        query += " ORDER BY is_portfolio DESC, c.market_cap_cr DESC;"
+        cursor.execute(query, params)
         rows = cursor.fetchall()
 
     companies = []
     for r in rows:
         c_dict = dict(r)
+        c_dict["is_portfolio"] = bool(c_dict["is_portfolio"])
         eod = MarketDataService.get_latest_eod(c_dict["ticker"])
         if eod:
             c_dict["current_price"] = eod["close_price"]
@@ -48,44 +62,59 @@ def get_companies(portfolio_only: bool = False):
 
 # --- Push: Windowed Digest & Pinned Alert ---
 @router.get("/push/digest")
-def get_digest(hours: int = Query(24, description="Time window in hours: 24, 168 (7d), 720 (30d)"), category: Optional[str] = Query(None)):
+def get_digest(
+    hours: int = Query(24, description="Time window in hours: 24, 168 (7d), 720 (30d)"),
+    category: Optional[str] = Query(None)
+):
     return FilingsEngine.get_windowed_digest(hours=hours, category_filter=category)
 
 @router.get("/push/pinned-alert")
-def get_pinned_alert():
-    """Returns the top pinned critical alert card for the digest header."""
-    return AnomalyDetector.get_top_pinned_alert()
+def get_pinned_alert(user_id: str = Query(DEFAULT_USER_ID)):
+    """Returns the top pinned critical alert card for the user's digest header (F-05)."""
+    return AnomalyDetector.get_top_pinned_alert(user_id=user_id)
 
-# --- Push: Ranked Alerts Stream ---
+# --- Push: Ranked Alerts Stream (F-05) ---
 @router.get("/push/alerts")
-def get_alerts(include_dismissed: bool = False):
-    return AnomalyDetector.get_ranked_anomalies(include_dismissed=include_dismissed)
+def get_alerts(
+    user_id: str = Query(DEFAULT_USER_ID),
+    include_dismissed: bool = False
+):
+    return AnomalyDetector.get_ranked_anomalies(user_id=user_id, include_dismissed=include_dismissed)
 
 @router.post("/push/alerts/{anomaly_id}/pin")
-def pin_alert(anomaly_id: str, is_pinned: bool = Body(..., embed=True)):
-    AnomalyDetector.set_pinned_status(anomaly_id, is_pinned)
-    return {"id": anomaly_id, "is_pinned": is_pinned}
+def pin_alert(
+    anomaly_id: str,
+    is_pinned: bool = Body(..., embed=True),
+    user_id: str = Query(DEFAULT_USER_ID)
+):
+    AnomalyDetector.set_pinned_status(anomaly_id, is_pinned, user_id=user_id)
+    return {"id": anomaly_id, "is_pinned": is_pinned, "user_id": user_id}
 
 @router.post("/push/alerts/{anomaly_id}/dismiss")
-def dismiss_alert(anomaly_id: str):
-    AnomalyDetector.dismiss_anomaly(anomaly_id)
-    return {"id": anomaly_id, "is_dismissed": True}
+def dismiss_alert(
+    anomaly_id: str,
+    user_id: str = Query(DEFAULT_USER_ID)
+):
+    AnomalyDetector.dismiss_anomaly(anomaly_id, user_id=user_id)
+    return {"id": anomaly_id, "is_dismissed": True, "user_id": user_id}
 
 # --- User Preferences & Thresholds ---
 @router.get("/preferences")
-def get_preferences():
-    return AnomalyDetector.get_user_preferences()
+def get_preferences(user_id: str = Query(DEFAULT_USER_ID)):
+    return AnomalyDetector.get_user_preferences(user_id=user_id)
 
 @router.put("/preferences")
 def update_preferences(
     volume_multiplier: float = Body(..., embed=True),
     price_move_pct: float = Body(..., embed=True),
-    auto_notify_critical: bool = Body(True, embed=True)
+    auto_notify_critical: bool = Body(True, embed=True),
+    user_id: str = Query(DEFAULT_USER_ID)
 ):
     return AnomalyDetector.update_user_preferences(
         volume_threshold=volume_multiplier,
         price_threshold=price_move_pct,
-        auto_notify=auto_notify_critical
+        auto_notify=auto_notify_critical,
+        user_id=user_id
     )
 
 # --- Web Push Notifications (Beacon) ---
@@ -116,32 +145,39 @@ def trigger_test_notification():
 def get_company_research(ticker: str):
     return ResearchEngine.get_company_research(ticker)
 
-# --- Nexus: Network Intelligence ---
+# --- Nexus: Tenant-Isolated Network Intelligence (F-02, F-03) ---
 @router.get("/network/feed")
-def get_network_feed():
-    return network_engine.get_network_feed()
+def get_network_feed(tenant_id: str = Query(DEFAULT_TENANT_ID)):
+    return network_engine.get_network_feed(tenant_id=tenant_id)
 
 @router.post("/network/contacts/{contact_id}/star")
-def toggle_star_contact(contact_id: str):
-    new_state = network_engine.toggle_star(contact_id)
-    return {"id": contact_id, "is_starred": new_state}
+def toggle_star_contact(
+    contact_id: str,
+    tenant_id: str = Query(DEFAULT_TENANT_ID)
+):
+    new_state = network_engine.toggle_star(contact_id, tenant_id=tenant_id)
+    return {"id": contact_id, "is_starred": new_state, "tenant_id": tenant_id}
 
 @router.get("/network/who-to-call/{ticker}")
-def get_who_to_call(ticker: str):
-    return network_engine.get_who_to_call(ticker)
+def get_who_to_call(
+    ticker: str,
+    tenant_id: str = Query(DEFAULT_TENANT_ID)
+):
+    return network_engine.get_who_to_call(ticker, tenant_id=tenant_id)
 
 @router.get("/network/second-degree")
 def get_second_degree_reach(
     target_person: str = Query(..., description="Target executive name"),
     target_role: str = Query("Executive", description="Target role"),
-    target_company: str = Query("Company", description="Target company")
+    target_company: str = Query("Company", description="Target company"),
+    tenant_id: str = Query(DEFAULT_TENANT_ID)
 ):
-    return network_engine.get_second_degree_reach(target_person, target_role, target_company)
+    return network_engine.get_second_degree_reach(target_person, target_role, target_company, tenant_id=tenant_id)
 
 # --- Pipeline Runner (On-demand trigger for demo/eval) ---
 @router.post("/pipeline/run")
-def run_pipeline():
-    anomalies = AnomalyDetector.evaluate_live_anomalies()
+def run_pipeline(user_id: str = Query(DEFAULT_USER_ID)):
+    anomalies = AnomalyDetector.evaluate_live_anomalies(user_id=user_id)
     return {
         "status": "completed",
         "anomalies_evaluated": len(anomalies),

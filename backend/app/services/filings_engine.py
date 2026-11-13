@@ -2,9 +2,7 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from app.db.database import get_db
-from app.models.schemas import AnnouncementCategory
 
-MATERIAL_CATEGORIES = {"results", "M&A", "management_change", "fund_raise", "litigation", "capex"}
 ROUTINE_CATEGORIES = {"unclassified", "postal_ballot", "agm_egm", "pledging"}
 
 class FilingsEngine:
@@ -12,15 +10,20 @@ class FilingsEngine:
     def classify_announcement(title: str, description: str) -> Dict[str, Any]:
         """
         Rule-based classifier that assigns one of the 17 standard categories
-        and computes a Materiality Score (1 to 10).
+        and computes a Materiality Score (1 to 10) according to the P-01 rubric.
+        - Score 9-10: CRITICAL (Results, CXO/MD Management Change, Major M&A)
+        - Score 8: HIGH (Large Capex, Key Regulatory Litigations)
+        - Score 4-7: MEDIUM (Fund raise, credit rating, dividends)
+        - Score 1-3: LOW/ROUTINE (ESOPs, compliance certificates, duplicate shares)
         """
         combined = f"{title} {description}".lower()
 
-        # 1. Results
+        # 1. Results (Score 10 if headline results, 7 if board meeting notice)
         if any(w in combined for w in ["financial results", "un-audited results", "audited results", "quarter ended", "half year ended", "board meeting to consider results"]):
-            return {"category": "results", "is_material": True, "materiality_score": 10 if "results" in title.lower() else 7}
+            score = 10 if "results" in title.lower() else 7
+            return {"category": "results", "is_material": score >= 8, "materiality_score": score}
 
-        # 2. Management Change
+        # 2. Management Change (Score 9 for CXO/MD/KMP)
         if any(w in combined for w in ["resignation of", "appointment of", "chief financial officer", "chief executive officer", "managing director", "coo", "cfo", "key managerial personnel", "director resigned"]):
             return {"category": "management_change", "is_material": True, "materiality_score": 9}
 
@@ -38,17 +41,17 @@ class FilingsEngine:
 
         # 6. Fund Raise
         if any(w in combined for w in ["rights issue", "qip", "preferential allotment", "commercial paper", "ncd", "debentures", "buyback"]):
-            return {"category": "fund_raise", "is_material": True, "materiality_score": 7}
+            return {"category": "fund_raise", "is_material": False, "materiality_score": 6}
 
         # 7. Credit Rating
         if any(w in combined for w in ["crisil", "icra", "care", "credit rating", "downgrade", "upgrade", "rating reaffirm"]):
-            return {"category": "credit_rating", "is_material": True, "materiality_score": 6}
+            return {"category": "credit_rating", "is_material": False, "materiality_score": 5}
 
         # 8. Dividend & Bonus
         if "dividend" in combined:
-            return {"category": "dividend", "is_material": True, "materiality_score": 6}
+            return {"category": "dividend", "is_material": False, "materiality_score": 6}
         if any(w in combined for w in ["bonus issue", "stock split", "sub-division"]):
-            return {"category": "bonus_split", "is_material": True, "materiality_score": 6}
+            return {"category": "bonus_split", "is_material": False, "materiality_score": 6}
 
         # 9. Earnings Call
         if any(w in combined for w in ["earnings call", "concall transcript", "audio recording", "investor presentation"]):
@@ -75,11 +78,11 @@ class FilingsEngine:
         with get_db() as conn:
             cursor = conn.cursor()
             query = """
-            SELECT a.id, a.ticker, c.name as company_name, a.category, a.title, a.description,
-                   a.filing_time, a.is_material, a.materiality_score, a.headline_metrics,
-                   a.executive_profile, a.network_connection
+            SELECT a.id, a.isin, a.ticker, c.name as company_name, a.category, a.title, a.description,
+                   a.filing_time, a.materiality_score, a.content_hash, a.financial_basis,
+                   a.headline_metrics, a.executive_profile, a.network_connection
             FROM announcements a
-            JOIN companies c ON a.ticker = c.ticker
+            JOIN companies c ON a.isin = c.isin
             WHERE a.filing_time >= ?
             """
             params: List[Any] = [cutoff_time]
@@ -96,16 +99,20 @@ class FilingsEngine:
         routine_filings = []
 
         for r in rows:
+            is_material = r["materiality_score"] >= 8
             item = {
                 "id": r["id"],
+                "isin": r["isin"],
                 "ticker": r["ticker"],
                 "company_name": r["company_name"],
                 "category": r["category"],
                 "title": r["title"],
                 "description": r["description"],
                 "filing_time": r["filing_time"],
-                "is_material": bool(r["is_material"]),
+                "is_material": is_material,
                 "materiality_score": r["materiality_score"],
+                "content_hash": r["content_hash"],
+                "financial_basis": r["financial_basis"],
                 "headline_metrics": json.loads(r["headline_metrics"]) if r["headline_metrics"] else None,
                 "executive_profile": json.loads(r["executive_profile"]) if r["executive_profile"] else None,
                 "network_connection": json.loads(r["network_connection"]) if r["network_connection"] else None,
