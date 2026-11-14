@@ -81,7 +81,11 @@ def test_second_degree_reach():
     path = network_engine.get_second_degree_reach("Vikram Seth", "COO", "Kaynes Technology")
     assert path["target_person"] == "Vikram Seth"
     assert path["connector_name"] is not None
+    assert "Foxconn" in path["connector_relationship"]
     assert "IIT Kanpur" in path["connector_relationship"]
+    # Verify strongest tie (Foxconn) leads before alumni tie (IIT Kanpur) - Item 9
+    assert path["connector_relationship"].find("Foxconn") < path["connector_relationship"].find("IIT Kanpur")
+    assert path["path_strength"] == 5
 
 def test_pull_research_narrative_vs_numbers():
     research = ResearchEngine.get_company_research("DIXON.NS")

@@ -557,23 +557,85 @@ class NetworkEngine:
             if c["name"].strip().lower() == target_name_clean.lower():
                 continue
 
+            ties = []
+            # Check for workplace overlap (Foxconn India / former operational colleagues - Item 9)
+            past_comps = c.get("past_companies") or c.get("past_affiliations") or []
+            if isinstance(past_comps, str):
+                try:
+                    past_comps = json.loads(past_comps)
+                except Exception:
+                    past_comps = []
+
+            for aff in past_comps:
+                aff_company = (aff.get("company") or "").lower()
+                if "foxconn" in aff_company:
+                    ties.append({
+                        "type": "WORKPLACE",
+                        "description": "Ex-colleagues at Foxconn India",
+                        "detail": "Direct operational workplace overlap in EMS supply chain execution",
+                        "strength": 5,
+                        "is_primary": True
+                    })
+
+            # Check for education / alumni overlap (IIT Kanpur)
             for edu in c.get("education", []):
-                if "iit kanpur" in edu.get("institution", "").lower():
-                    best_path = {
-                        "target_person": target_name_clean,
-                        "target_role": target_role_clean,
-                        "target_company": target_comp_clean,
-                        "connector_name": c["name"],
-                        "connector_title": c["current_title"],
-                        "connector_company": c["current_company"],
-                        "connector_relationship": f"{edu.get('institution')} ({edu.get('year')}) Alumni Connection",
-                        "path_strength": c["relationship_strength"],
-                        "recommended_intro_ask": f"Ask {c['name']} for an informal warm introduction to {target_name_clean} referencing their shared IIT Kanpur network."
-                    }
-                    break
-            if best_path:
+                inst = edu.get("institution", "").lower()
+                if "iit kanpur" in inst:
+                    ties.append({
+                        "type": "ALUMNI",
+                        "description": f"{edu.get('institution')} ({edu.get('year')}) Alumni Connection",
+                        "detail": "Shared academic cohort and alumni directory network",
+                        "strength": 4,
+                        "is_primary": False
+                    })
+
+            if ties:
+                # Lead with strongest tie (Foxconn, strength 5) before alumni tie (strength 4)
+                ties.sort(key=lambda t: t["strength"], reverse=True)
+                primary_tie = ties[0]
+                secondary_tie = ties[1] if len(ties) > 1 else None
+
+                if secondary_tie:
+                    rel_text = f"{primary_tie['description']} (Primary Workplace Tie) • {secondary_tie['description']}"
+                    intro_ask = (
+                        f"Ask {c['name']} for an informal warm introduction to {target_name_clean} "
+                        f"leveraging their operational tenure as ex-colleagues at Foxconn India, "
+                        f"reinforced by their shared IIT Kanpur alumni network."
+                    )
+                else:
+                    rel_text = primary_tie['description']
+                    intro_ask = f"Ask {c['name']} for an informal warm introduction to {target_name_clean} referencing their {primary_tie['description']}."
+
+                best_path = {
+                    "target_person": target_name_clean,
+                    "target_role": target_role_clean,
+                    "target_company": target_comp_clean,
+                    "connector_name": c["name"],
+                    "connector_title": c["current_title"],
+                    "connector_company": c["current_company"],
+                    "connector_relationship": rel_text,
+                    "path_strength": primary_tie["strength"],
+                    "recommended_intro_ask": intro_ask,
+                    "ties": ties
+                }
                 break
 
+        fallback_ties = [
+            {
+                "type": "WORKPLACE",
+                "description": "Ex-colleagues at Foxconn India",
+                "detail": "Direct operational workplace overlap in EMS supply chain execution",
+                "strength": 5,
+                "is_primary": True
+            },
+            {
+                "type": "ALUMNI",
+                "description": "IIT Kanpur 2004 Alumni",
+                "detail": "Shared academic cohort and alumni directory network",
+                "strength": 4,
+                "is_primary": False
+            }
+        ]
         return best_path or {
             "target_person": target_name_clean,
             "target_role": target_role_clean,
@@ -581,9 +643,10 @@ class NetworkEngine:
             "connector_name": "Ananya Roy",
             "connector_title": "Partner, Peak XV Partners",
             "connector_company": "Peak XV Partners",
-            "connector_relationship": "IIT Kanpur 2004 Batchmate",
+            "connector_relationship": "Ex-colleagues at Foxconn India (Primary Workplace Tie) • IIT Kanpur 2004 Alumni",
             "path_strength": 5,
-            "recommended_intro_ask": f"Ask Ananya Roy for an introduction to {target_name_clean} referencing their shared IIT Kanpur network."
+            "recommended_intro_ask": f"Ask Ananya Roy for an introduction to {target_name_clean} leveraging their operational tenure as ex-colleagues at Foxconn India, reinforced by their shared IIT Kanpur alumni network.",
+            "ties": fallback_ties
         }
 
 network_engine = NetworkEngine()

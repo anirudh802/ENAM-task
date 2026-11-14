@@ -361,7 +361,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 Vikram Seth — Chief Operating Officer, Kaynes Technology
               </h4>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
-                Newly appointed COO at Kaynes (former Senior VP Manufacturing at Dixon Technologies). 2nd-degree bridge identified via <strong>Ananya Roy</strong> (IIT Kanpur 2004 Batchmate). Ex-colleagues at Foxconn India.
+                Newly appointed COO at Kaynes (former Senior VP Manufacturing at Dixon Technologies). 2nd-degree bridge identified via <strong>Ananya Roy</strong> (Ex-colleagues at Foxconn India, IIT Kanpur 2004 Batchmate).
               </p>
             </div>
             <div className="flex items-center justify-end pt-1">
@@ -530,7 +530,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
                     <span>2nd-Degree Reach: Vikram Seth (COO, Kaynes Tech)</span>
                   </span>
                   <p className="text-[10px] text-slate-600 dark:text-slate-400">
-                    IIT Kanpur 2004 Batchmate bridge available for warm intro.
+                    Ex-colleagues at Foxconn India (Primary) & IIT Kanpur alumni bridge available.
                   </p>
                 </div>
                 <button
@@ -745,13 +745,74 @@ export const NexusView: React.FC<NexusViewProps> = ({
               </div>
             </div>
 
-            <div className="text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
-              <span className="font-semibold text-slate-900 dark:text-white block mb-0.5">
-                Mutual Link Context:
+            {/* Link-Strength Meter (Item 9) */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Link-Strength Meter:
+                </span>
+                <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <span>{secondDegreePath.path_strength ?? 5}/5</span>
+                  <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                    ({(secondDegreePath.path_strength ?? 5) >= 5 ? 'Highest Conviction' : 'Warm Conviction'})
+                  </span>
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5 h-2">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <div
+                    key={level}
+                    className={`rounded-full h-full transition-all ${
+                      level <= (secondDegreePath.path_strength ?? 5)
+                        ? 'bg-emerald-500 dark:bg-emerald-400'
+                        : 'bg-slate-200 dark:bg-slate-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Mutual Link Context - Leading with Strongest Tie (Foxconn) before Alumni */}
+            <div className="text-xs bg-slate-50 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+              <span className="font-semibold text-slate-900 dark:text-white block text-xs">
+                Relationship Bridges (Ranked by Tie Strength):
               </span>
-              <p className="text-slate-700 dark:text-slate-300">
-                {secondDegreePath.connector_relationship}
-              </p>
+              <div className="space-y-1.5 font-mono text-[11px]">
+                {/* Tie 1: Primary Workplace Tie (Foxconn) */}
+                <div className="p-2 rounded bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                        1. Ex-colleagues at Foxconn India
+                      </span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200">
+                        Strength 5/5 · Primary
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 block mt-0.5">
+                      Direct operational workplace overlap in electronics manufacturing & supply chain.
+                    </span>
+                  </div>
+                </div>
+                {/* Tie 2: Secondary Alumni Tie (IIT Kanpur) */}
+                <div className="p-2 rounded bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        2. IIT Kanpur 2004 Alumni
+                      </span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                        Strength 4/5 · Secondary
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                      Shared academic cohort and alumni directory connection.
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">

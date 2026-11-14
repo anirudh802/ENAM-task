@@ -148,4 +148,7 @@ def test_second_degree_reach_tenant_graph():
     assert path is not None
     assert path["target_person"] == "Vikram Seth"
     assert "connector_name" in path
-    assert path["path_strength"] >= 4
+    assert path["path_strength"] == 5
+    assert "Foxconn" in path["connector_relationship"]
+    assert "IIT Kanpur" in path["connector_relationship"]
+    assert path["connector_relationship"].find("Foxconn") < path["connector_relationship"].find("IIT Kanpur")

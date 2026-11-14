@@ -186,9 +186,12 @@ class SecondDegreePath(BaseModel):
     target_role: str
     target_company: str
     connector_name: str
+    connector_title: Optional[str] = None
+    connector_company: Optional[str] = None
     connector_relationship: str
     path_strength: int
     recommended_intro_ask: str
+    ties: Optional[List[Dict[str, Any]]] = None
 
 class WhoToCallResponse(BaseModel):
     ticker: str

@@ -251,16 +251,25 @@ export interface WhoToCallResponse {
   restricted_status_message?: string;
 }
 
+export interface SecondDegreeTie {
+  type: string;
+  description: string;
+  detail: string;
+  strength: number;
+  is_primary: boolean;
+}
+
 export interface SecondDegreePath {
   target_person: string;
   target_role: string;
   target_company: string;
   connector_name: string;
-  connector_title: string;
-  connector_company: string;
+  connector_title?: string;
+  connector_company?: string;
   connector_relationship: string;
   path_strength: number;
   recommended_intro_ask: string;
+  ties?: SecondDegreeTie[];
 }
 
 export type AskIntent = 'NETWORK' | 'GUIDANCE' | 'RESULTS' | 'ANOMALY' | 'SYNTHESIS' | 'EMPTY' | 'GENERAL';
