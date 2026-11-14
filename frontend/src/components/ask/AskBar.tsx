@@ -30,9 +30,36 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
   const [response, setResponse] = useState<AskResponse | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [hasUsedPrompt, setHasUsedPrompt] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Hide quick prompts on scroll (Item 7)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 30) {
+        setIsScrolled(true);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    const mainEl = document.querySelector('main');
+    const handleMainScroll = () => {
+      if (mainEl && mainEl.scrollTop > 30) {
+        setIsScrolled(true);
+      }
+    };
+    if (mainEl) {
+      mainEl.addEventListener('scroll', handleMainScroll, { passive: true });
+    }
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (mainEl) {
+        mainEl.removeEventListener('scroll', handleMainScroll);
+      }
+    };
+  }, []);
 
   // Initialize Speech Recognition if supported
   useEffect(() => {
@@ -97,6 +124,7 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
     const q = (textToQuery !== undefined ? textToQuery : query).trim();
     if (!q) return;
 
+    setHasUsedPrompt(true);
     setIsLoading(true);
     setIsOpen(true);
     try {
@@ -168,14 +196,17 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
       {/* Pinned Ask Bar above Bottom Navigation */}
       <div className="fixed bottom-[60px] left-0 right-0 z-30 px-3 py-1.5 pointer-events-none">
         <div className="max-w-lg mx-auto pointer-events-auto">
-          {/* Quick Suggestion Chips (when closed) */}
-          {!isOpen && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-1.5 px-1 py-0.5">
+          {/* Quick Suggestion Chips (solid background, hides after first use or on scroll, Item 7) */}
+          {!isOpen && !hasUsedPrompt && !isScrolled && (
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
               {quickPrompts.map((p, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleQuickPrompt(p.q)}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-blue-400 dark:hover:border-blue-500 whitespace-nowrap transition active:scale-95 flex items-center gap-1"
+                  onClick={() => {
+                    setHasUsedPrompt(true);
+                    handleQuickPrompt(p.q);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-300 dark:border-slate-700 shadow-xs hover:border-blue-400 dark:hover:border-blue-500 whitespace-nowrap transition active:scale-95 flex items-center gap-1"
                 >
                   <span>{p.label}</span>
                 </button>

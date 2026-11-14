@@ -287,11 +287,11 @@ export const NexusView: React.FC<NexusViewProps> = ({
         <div className="space-y-2.5">
           {/* Notice 1: Warm Reconnect (Pooja Singhania / Trent results) */}
           <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-mono flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/40">
+            <div className="flex items-center justify-between gap-3 text-[11px] mb-1">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-mono flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
                 <Clock className="w-3 h-3" /> Warm Reconnect Hook
               </span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-[10px] font-mono text-slate-400 shrink-0 text-right ml-auto pl-2">
                 Last Contact: 14 Aug 2026 (92d ago)
               </span>
             </div>
@@ -316,11 +316,11 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
           {/* Notice 2: Client Sourcing Intel (Rohan Deshmukh / Dixon) */}
           <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono flex items-center gap-1 border border-blue-200 dark:border-blue-800/40">
+            <div className="flex items-center justify-between gap-3 text-[11px] mb-1">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono flex items-center gap-1 border border-blue-200 dark:border-blue-800/40 shrink-0">
                 <Users className="w-3 h-3" /> Key Client Channel Check
               </span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-[10px] font-mono text-slate-400 shrink-0 text-right ml-auto pl-2">
                 Last Contact: 12 Sep 2026 (63d ago)
               </span>
             </div>
@@ -348,11 +348,11 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
           {/* Notice 3: Executive Transition Diligence (Vikram Seth / Kaynes via Ananya Roy) */}
           <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono flex items-center gap-1 border border-amber-200 dark:border-amber-800/40">
+            <div className="flex items-center justify-between gap-3 text-[11px] mb-1">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono flex items-center gap-1 border border-amber-200 dark:border-amber-800/40 shrink-0">
                 <Share2 className="w-3 h-3" /> 2nd-Degree Executive Transition Bridge
               </span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-[10px] font-mono text-slate-400 shrink-0 text-right ml-auto pl-2">
                 Target: External Leadership
               </span>
             </div>
@@ -377,11 +377,11 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
           {/* Notice 4: Feedstock Advisory (Dr. Arvind Swaminathan / Deepak Nitrite) */}
           <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono flex items-center gap-1 border border-indigo-200 dark:border-indigo-800/40">
+            <div className="flex items-center justify-between gap-3 text-[11px] mb-1">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono flex items-center gap-1 border border-indigo-200 dark:border-indigo-800/40 shrink-0">
                 <Info className="w-3 h-3" /> Chemical Feedstock Cycle Advisory
               </span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-[10px] font-mono text-slate-400 shrink-0 text-right ml-auto pl-2">
                 Last Contact: 04 Aug 2026 (102d ago)
               </span>
             </div>

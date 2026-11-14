@@ -95,38 +95,26 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'BEAT':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1 shrink-0 border border-emerald-200 dark:border-emerald-800/40">
-            <span>✓</span> BEAT
-          </span>
-        );
-      case 'MISSED':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 flex items-center gap-1 shrink-0 border border-rose-200 dark:border-rose-800/40">
-            <span>▲</span> MISSED
-          </span>
-        );
-      case 'MET':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 flex items-center gap-1 shrink-0 border border-blue-200 dark:border-blue-800/40">
-            <span>✓</span> MET
-          </span>
-        );
-      case 'QUALITATIVE':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 flex items-center gap-1 shrink-0 border border-purple-200 dark:border-purple-800/40">
-            QUALITATIVE
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 shrink-0">
-            PENDING
-          </span>
-        );
+    const s = (status || '').toUpperCase();
+    if (s.includes('BEAT')) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1 shrink-0 border border-emerald-200 dark:border-emerald-800/40">
+          <span>✓</span> BEAT
+        </span>
+      );
     }
+    if (s.includes('MISS')) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 flex items-center gap-1 shrink-0 border border-rose-200 dark:border-rose-800/40">
+          <span>▲</span> MISSED
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 flex items-center gap-1 shrink-0 border border-blue-200 dark:border-blue-800/40">
+        <span>✓</span> MET
+      </span>
+    );
   };
 
   const renderRangeBar = (item: any) => {
@@ -273,7 +261,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
             <div className="flex items-start justify-between gap-2 mb-2">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-white line-clamp-2 break-words">
                     {research.company_name}
                   </h2>
                   <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
@@ -319,7 +307,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800/80 border-t border-slate-200 dark:border-slate-800/80 pt-2.5 mt-2.5 text-[11px]">
               {research.business_snapshot.segments.map((seg, idx) => (
                 <div key={seg.name} className={`${idx > 0 ? 'sm:pl-3' : ''} ${idx < research.business_snapshot.segments.length - 1 ? 'sm:pr-3' : ''} py-1 sm:py-0`}>
-                  <span className="text-slate-400 block truncate text-[10px] uppercase font-mono">{seg.name}</span>
+                  <span className="text-slate-400 block line-clamp-2 break-words text-[10px] uppercase font-mono">{seg.name}</span>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="font-bold font-mono font-num tabular-nums text-slate-900 dark:text-white text-xs">
                       {seg.revenue_share_pct}%
@@ -506,6 +494,20 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                 )}
               </div>
 
+              {/* Guidance Status Legend (Item 7) */}
+              <div className="flex items-center gap-3 text-[10px] font-mono py-1 px-2 rounded-md bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 flex-wrap">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Legend:</span>
+                <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> ✓ BEAT
+                </span>
+                <span className="flex items-center gap-1 text-blue-700 dark:text-blue-400 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" /> ✓ MET
+                </span>
+                <span className="flex items-center gap-1 text-rose-700 dark:text-rose-400 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" /> ▲ MISSED
+                </span>
+              </div>
+
               {research.narrative_vs_numbers.length === 0 ? (
                 <div className="finance-card p-6 text-center text-xs text-slate-500">
                   No historical guidance tracking records found for this ticker.
@@ -525,14 +527,14 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-2 break-words">
                               {item.metric}
                             </span>
                             <span className="text-[10px] font-semibold text-slate-400">
                               ({item.fiscal_quarter})
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 break-words mt-0.5">
                             {item.variance}
                           </p>
                         </div>
