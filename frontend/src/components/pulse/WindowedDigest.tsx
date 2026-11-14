@@ -42,10 +42,14 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
     try {
       const dt = new Date(isoTime);
       if (isNaN(dt.getTime())) return 'Recently';
-      // Simulated reference timestamp: 2026-11-13T20:00:00 IST (current EOD session)
-      const now = new Date('2026-11-13T20:00:00');
-      const diffMs = now.getTime() - dt.getTime();
-      const diffHours = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
+      // Demo clock reference: 13 Nov 18:45 IST
+      const refTime = new Date('2026-11-13T18:45:00');
+      const diffMs = refTime.getTime() - dt.getTime();
+      if (Math.abs(diffMs) <= 1800000) {
+        return '18:45 IST';
+      }
+      const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+      if (diffHours <= 0) return '18:45 IST';
       if (diffHours < 24) return `${diffHours}h ago`;
       const days = Math.round(diffHours / 24);
       return `${days}d ago`;
@@ -192,15 +196,17 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
 
       {/* Daily Load Summary Bar */}
       {digest && (
-        <div className="flex items-center justify-between text-[11px] font-mono px-3 py-1.5 mb-3 rounded-lg bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 text-slate-600 dark:text-slate-400">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] font-mono px-3 py-1.5 mb-3 rounded-lg bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="text-rose-600 dark:text-rose-400 font-semibold">{criticalCount} critical</span>
             <span>·</span>
             <span className="text-amber-600 dark:text-amber-400 font-semibold">{highCount} high</span>
             <span>·</span>
             <span>{routineCount} routine</span>
           </div>
-          <span className="text-[10px] text-slate-500">as of 18:45 IST · EOD</span>
+          <span className="text-[10px] text-slate-500 whitespace-nowrap sm:text-right">
+            Demo data as of 13 Nov 18:45 IST
+          </span>
         </div>
       )}
 
