@@ -225,13 +225,12 @@ export const NexusView: React.FC<NexusViewProps> = ({
             </p>
           </div>
 
-          <button
+          <ActionButton
+            variant="secondary"
+            icon={Users}
+            label="Who to Call?"
             onClick={() => fetchWhoToCall(selectedTicker)}
-            className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 border border-slate-700 font-medium text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
-          >
-            <Users className="w-3.5 h-3.5 stroke-[1.75]" />
-            <span>Who to Call?</span>
-          </button>
+          />
         </div>
 
         {/* Ticker pills for quick who to call */}
@@ -244,10 +243,10 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 setSelectedTicker(t);
                 fetchWhoToCall(t);
               }}
-              className={`min-h-[36px] px-2.5 py-1 rounded text-[10px] font-semibold transition ${
+              className={`h-6 px-2.5 rounded text-[10px] font-mono font-semibold transition flex items-center ${
                 selectedTicker === t
-                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-semibold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                  ? 'bg-violet-600 text-white dark:bg-violet-600 dark:text-white border border-violet-500 shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               {t.replace('.NS', '')}
@@ -401,10 +400,10 @@ export const NexusView: React.FC<NexusViewProps> = ({
           <button
             key={th}
             onClick={() => setSelectedTheme(th)}
-            className={`min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition border ${
+            className={`min-h-[32px] px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition border ${
               selectedTheme === th
-                ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-950 font-semibold'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'bg-violet-600 border-violet-600 text-white shadow-sm font-semibold'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
             }`}
           >
             {th === 'all' ? 'All Domains' : th}
@@ -814,7 +813,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
             <button
               onClick={() => setShowSecondDegreeModal(false)}
-              className="w-full min-h-[44px] py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 font-medium text-xs rounded-md border border-slate-700 transition"
+              className="w-full min-h-[40px] py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 font-medium text-xs rounded-md border border-slate-700 transition"
             >
               Done
             </button>
