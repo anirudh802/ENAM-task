@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PullResearch } from '../../types';
 import { api } from '../../services/api';
 import {
@@ -33,6 +33,50 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'narrative' | 'financials' | 'thesis'>('narrative');
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({ 0: true });
+
+  // Unified concall count and guidance summary rows derived from same data (Item 8)
+  const concallsAvailable = research?.coverage_assessment?.breakdown?.concall_transcripts_available ?? (research?.narrative_vs_numbers ? new Set(research.narrative_vs_numbers.map(g => g.fiscal_quarter)).size : 0);
+  const regulatoryFilingsCount = research?.coverage_assessment?.breakdown?.regulatory_announcements_count || 1;
+
+  const guidanceSummaryRows = useMemo(() => {
+    if (!research?.narrative_vs_numbers || research.narrative_vs_numbers.length === 0) {
+      return [];
+    }
+    const groups: { [key: string]: { label: string; sublabel: string; quarters: { quarter: string; status: string }[] } } = {};
+    for (const item of research.narrative_vs_numbers) {
+      const metricLower = item.metric.toLowerCase();
+      let key = item.metric;
+      let label = item.metric;
+      let sublabel = item.variance;
+
+      if (metricLower.includes('revenue')) {
+        key = 'revenue';
+        label = 'Top-Line Revenue';
+        sublabel = 'Consolidated / Segment Run Rate';
+      } else if (metricLower.includes('margin') || metricLower.includes('ebitda')) {
+        key = 'margin';
+        label = 'EBITDA Margin %';
+        sublabel = 'Operating Margin Corridor';
+      } else if (metricLower.includes('volume') || metricLower.includes('smartphone')) {
+        key = 'volume';
+        label = 'Smartphone Volume';
+        sublabel = 'Monthly Production Run Rate';
+      }
+
+      if (!groups[key]) {
+        groups[key] = { label, sublabel, quarters: [] };
+      }
+
+      const qLabel = item.fiscal_quarter.replace(/FY\d+/, '').trim() || item.fiscal_quarter;
+      if (!groups[key].quarters.some(q => q.quarter === qLabel)) {
+        groups[key].quarters.push({
+          quarter: qLabel,
+          status: item.status
+        });
+      }
+    }
+    return Object.values(groups);
+  }, [research?.narrative_vs_numbers]);
 
   const portfolioHoldings = [
     { ticker: 'DIXON.NS', hasNetwork: true, contact: 'Rohan Deshmukh' },
@@ -294,7 +338,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                   <Database className="w-3 h-3 text-blue-500" /> Primary Disclosures Ingested:
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {research.coverage_assessment.breakdown?.concall_transcripts_available || 1} Concall • 1 Annual Report • {research.coverage_assessment.breakdown?.regulatory_announcements_count || 1} SEBI Filings
+                  {concallsAvailable} Concall{concallsAvailable === 1 ? '' : 's'} • 1 Annual Report • {regulatoryFilingsCount} SEBI Filings
                 </span>
               </div>
             )}
@@ -313,11 +357,14 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                       {seg.revenue_share_pct}%
                     </span>
                     <span className="text-[10px] font-mono font-num tabular-nums text-slate-500">
-                      mix ({seg.margin_pct}% margin)
+                      mix ({seg.margin_pct}% seg. op margin)
                     </span>
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="mt-2 text-[10px] text-slate-500 dark:text-slate-400 font-mono italic">
+              *Segment margins reflect division-level operating profitability (weighted avg ~3.9%) prior to unallocated corporate overhead, vs {research.financial_snapshot?.ebitda_margin_pct ?? 3.64}% consolidated EBITDA margin.
             </div>
           </div>
 
@@ -341,58 +388,56 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               </span>
             </div>
 
-            {/* 4-Quarter Metric Track Record Rows */}
+            {/* Guidance Track Record Rows - Derived from narrative_vs_numbers */}
             <div className="space-y-2 py-1">
-              {/* Row 1: Revenue Run Rate */}
-              <div className="flex items-center justify-between text-[11px] gap-2 pb-1.5 border-b border-slate-200/60 dark:border-slate-800/60">
-                <div className="min-w-0">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">
-                    Top-Line Revenue
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Q3 FY26 — Q2 FY27</span>
+              {guidanceSummaryRows.length === 0 ? (
+                <div className="py-2 text-center text-[11px] text-slate-500 font-mono">
+                  No guidance items extracted yet for {research.ticker}.
                 </div>
-                <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q3 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800/40">Q4 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q1 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q2 ✓</span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">4/4 Met</span>
-                </div>
-              </div>
-
-              {/* Row 2: EBITDA Margin */}
-              <div className="flex items-center justify-between text-[11px] gap-2 pb-1.5 border-b border-slate-200/60 dark:border-slate-800/60">
-                <div className="min-w-0">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">
-                    EBITDA Margin %
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Diluted by Mobile Pass-Through</span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800/40">Q3 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800/40">Q4 ●</span>
-                  <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-800/40">Q1 ▲</span>
-                  <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-800/40">Q2 ▲</span>
-                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold ml-1">2/4 Diluted</span>
-                </div>
-              </div>
-
-              {/* Row 3: Smartphone Volume / Operating Metric */}
-              <div className="flex items-center justify-between text-[11px] gap-2">
-                <div className="min-w-0">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">
-                    Smartphone Volume
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">2.2M → 3.8M units/month</span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q3 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q4 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q1 ✓</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/40">Q2 ✓</span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">4/4 Beats</span>
-                </div>
-              </div>
+              ) : (
+                guidanceSummaryRows.map((row, rIdx) => {
+                  const beatsCount = row.quarters.filter(q => q.status === 'BEAT' || q.status === 'MET').length;
+                  const totalCount = row.quarters.length;
+                  return (
+                    <div
+                      key={rIdx}
+                      className={`flex items-center justify-between text-[11px] gap-2 ${
+                        rIdx < guidanceSummaryRows.length - 1 ? 'pb-1.5 border-b border-slate-200/60 dark:border-slate-800/60' : ''
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">
+                          {row.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono line-clamp-1">
+                          {row.sublabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
+                        {row.quarters.map((q, qIdx) => (
+                          <span
+                            key={qIdx}
+                            className={`px-1.5 py-0.5 rounded font-bold border ${
+                              q.status === 'BEAT'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40'
+                                : q.status === 'MET'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800/40'
+                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-200 dark:border-rose-800/40'
+                            }`}
+                          >
+                            {q.quarter} {q.status === 'BEAT' ? '✓' : q.status === 'MET' ? '✓' : '▲'}
+                          </span>
+                        ))}
+                        <span className={`text-[10px] font-bold ml-1 ${
+                          beatsCount === totalCount ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'
+                        }`}>
+                          {beatsCount}/{totalCount} Met
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             {/* Quick Institutional Vital Statistics Strip */}
@@ -406,7 +451,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               <div>
                 <span className="text-slate-400 text-[10px] block">Coverage Disclosure</span>
                 <span className="font-bold text-slate-900 dark:text-white break-words block">
-                  {research.coverage_line || research.coverage_assessment?.coverage_line || '1 of 4 transcripts, annual report found'}
+                  {research.coverage_line || research.coverage_assessment?.coverage_line || `${concallsAvailable} of 4 transcripts, annual report found`}
                 </span>
               </div>
               <div className="col-span-2 sm:col-span-1">

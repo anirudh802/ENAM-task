@@ -748,6 +748,39 @@ CONCALL_SEED = [
         "analyst_qa_excerpts": "Analyst (UBS): What is the sustainable margin on the mobile business? Atul Lall: On pure assembly, margins will be 3.0% to 3.2%. However, as backward integration into display and battery packs kicks in, blended mobile margin will expand toward 4.2%."
     },
     {
+        "id": "concall-dixon-q1fy27",
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q1FY27",
+        "transcript_date": "2026-08-04",
+        "content_hash": compute_hash("Atul Lall MD Dixon Q1 consolidated revenues 6580 Cr mobile ramp up Transsion Motorola"),
+        "management_remarks": "Atul Lall (MD): In Q1, consolidated revenue reached Rs 6,580 Cr (+101.2% YoY). Revenue growth was led by continuous mobile contract onboarding with initial ramp-up for Transsion and Motorola. Smartphone monthly volume reached 3.1 million units.",
+        "guidance_excerpts": "Guidance for Q2 FY27: Mobile division quarterly revenue guided to cross Rs 7,500 Cr to Rs 8,000 Cr in Q2 FY27. Factory floor utilization running above 85%.",
+        "analyst_qa_excerpts": "Analyst (Jefferies): Will mobile assembly dilute operating margins? Atul Lall: Consolidated EBITDA margin was 3.82% in Q1. Mobile assembly has lower percentage margins but returns on capital employed remain strong."
+    },
+    {
+        "id": "concall-dixon-q4fy26",
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q4FY26",
+        "transcript_date": "2026-05-18",
+        "content_hash": compute_hash("Atul Lall MD Dixon Q4 revenue 5120 Cr meeting operational corridor consumer electronics stabilized"),
+        "management_remarks": "Atul Lall (MD): We closed the fiscal year with Rs 5,120 Cr in Q4, fully meeting the operational corridor communicated in January. Consumer electronics stabilized while mobile division ramp-up commenced.",
+        "guidance_excerpts": "Guidance for Q1 FY27: Consolidated quarterly revenue guided between Rs 6,200 Cr and Rs 6,500 Cr. Consolidated EBITDA margin expected around 3.9% to 4.1%.",
+        "analyst_qa_excerpts": "Analyst (Kotak): What is the status of new smartphone customer additions? Atul Lall: Both Motorola and Xiaomi lines are operating at capacity with commercial shipments on track. Smartphone monthly run rate hit 2.6M units."
+    },
+    {
+        "id": "concall-dixon-q3fy26",
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q3FY26",
+        "transcript_date": "2026-01-30",
+        "content_hash": compute_hash("Atul Lall MD Dixon Q3 festive revenue 4818 Cr washing machines lighting"),
+        "management_remarks": "Atul Lall (MD): Festive season demand across washing machines and lighting helped push top-line past our Rs 4,800 Cr target, delivering Rs 4,818 Cr. Festive sell-through was strong across Tier-2/3 consumer electronics.",
+        "guidance_excerpts": "Guidance for Q4 FY26: Q4 revenue expected in the corridor of Rs 4,800 Cr to Rs 5,200 Cr with consolidated EBITDA margin targeted between 3.9% and 4.1%.",
+        "analyst_qa_excerpts": "Analyst (Nomura): How did lighting division perform? Atul Lall: Lighting revenue recovered 6% QoQ with margin stabilization at 6.8%. Smartphone volumes grew to 2.3M units/month."
+    },
+    {
         "id": "concall-trent-q2fy27",
         "isin": "INE849A01020",
         "ticker": "TRENT.NS",
