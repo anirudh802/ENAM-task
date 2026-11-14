@@ -239,6 +239,10 @@ export interface WhoToCallResponse {
   competitor_contacts: NetworkContact[];
   supplier_contacts: NetworkContact[];
   suggested_questions: string[];
+  is_restricted?: boolean;
+  compliance_status?: string;
+  compliance_label?: string;
+  restricted_status_message?: string;
 }
 
 export interface SecondDegreePath {

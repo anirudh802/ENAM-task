@@ -193,6 +193,10 @@ class WhoToCallResponse(BaseModel):
     competitor_contacts: List[NetworkContact]
     supplier_contacts: List[NetworkContact]
     suggested_questions: List[str]
+    is_restricted: bool = False
+    compliance_status: str = "CLEAR"
+    compliance_label: str = "SEBI PIT COMPLIANT"
+    restricted_status_message: Optional[str] = None
 
 # --- User Preferences & Web Push ---
 class UserThresholdPreferences(BaseModel):

@@ -318,7 +318,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
           <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
             <div className="flex items-center justify-between text-[11px]">
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono flex items-center gap-1 border border-blue-200 dark:border-blue-800/40">
-                <Users className="w-3 h-3" /> Key Client Order Flow Intel
+                <Users className="w-3 h-3" /> Key Client Channel Check
               </span>
               <span className="text-[10px] font-mono text-slate-400">
                 Last Contact: 12 Sep 2026 (63d ago)
@@ -341,7 +341,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 text-xs font-medium flex items-center gap-1.5 transition shadow-sm active:scale-95"
               >
                 <Users className="w-3.5 h-3.5" />
-                <span>Ask Order Flow Intel</span>
+                <span>Channel check</span>
               </button>
             </div>
           </div>
@@ -390,7 +390,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 Dr. Arvind Swaminathan — Specialty Chemicals Technical Advisor
               </h4>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
-                Global phenol & acetone benchmark spreads expanded 140 bps this week. Dr. Swaminathan is your primary technical expert on Deepak Nitrite's Dahej plant capacity and benzene feedstock cost pass-through.
+                Global phenol & acetone benchmark spreads expanded 140 bps this week. Dr. Swaminathan is your primary technical expert on industry-wide chemical feedstock cycles and benzene cost pass-through dynamics.
               </p>
             </div>
             <div className="flex items-center justify-end pt-1">
@@ -574,7 +574,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
                     className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium flex items-center gap-1.5 transition border border-violet-400/20 shadow-sm active:scale-95"
                   >
                     <Phone className="w-3.5 h-3.5 stroke-[1.75]" />
-                    <span>Initiate Scuttlebutt</span>
+                    <span>Channel check</span>
                   </button>
                 )}
               </div>
@@ -675,11 +675,13 @@ export const NexusView: React.FC<NexusViewProps> = ({
             <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-md border border-slate-200 dark:border-slate-800 border-l-2 border-l-amber-500 space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                  Diligence Questions (Channel Scuttlebutt):
+                  Diligence Questions (Channel check):
                 </h4>
-                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-mono">
-                  SEBI PIT Compliant
-                </span>
+                {whoToCallData.compliance_status === 'CLEAR' && (
+                  <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 font-mono">
+                    SEBI PIT Compliant
+                  </span>
+                )}
               </div>
               <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
                 {whoToCallData.suggested_questions.map((q, idx) => (

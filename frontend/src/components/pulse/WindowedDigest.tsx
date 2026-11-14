@@ -385,10 +385,10 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
                       <button
                         onClick={() => onCallContact(filing.network_connection!.connected_person_name)}
                         className="min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/60 border border-violet-300 dark:border-violet-800 font-medium text-[11px] active:scale-95 transition flex items-center justify-center shrink-0 shadow-xs"
-                        title={`Scuttlebutt outreach to ${filing.network_connection.connected_person_name}`}
-                        aria-label={`Scuttlebutt outreach to ${filing.network_connection.connected_person_name}`}
+                        title={`Channel check outreach to ${filing.network_connection.connected_person_name}`}
+                        aria-label={`Channel check outreach to ${filing.network_connection.connected_person_name}`}
                       >
-                        Scuttlebutt
+                        Channel check
                       </button>
                     )}
                   </div>

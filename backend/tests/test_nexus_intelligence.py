@@ -60,6 +60,13 @@ def test_sebi_mnpi_guardrails_and_restricted_list():
     rohan = next((c for c in dixon_call["direct_contacts"] if "Rohan" in c["name"]), None)
     assert rohan is not None
     assert rohan["compliance_role"] == "FORMER_EMPLOYEE_SAFE"
+    assert rohan["compliance_status"] == "CLEAR"
+    assert dixon_call["compliance_status"] == "CLEAR"
+
+    # Verify sector-level questions (no capacity utilization / yield)
+    assert any("component lead times" in q for q in dixon_call["suggested_questions"])
+    assert any("festive retail sell-through" in q for q in dixon_call["suggested_questions"])
+    assert not any("capacity" in q.lower() or "yield" in q.lower() or "deferral" in q.lower() for q in dixon_call["suggested_questions"])
 
     # 2. Restricted list match blocks suggestions
     blocked_call = network_engine.get_who_to_call(
@@ -68,6 +75,7 @@ def test_sebi_mnpi_guardrails_and_restricted_list():
         restricted_list=["DIXON.NS", "RELIANCE.NS"]
     )
     assert blocked_call["is_restricted"] is True
+    assert blocked_call["compliance_status"] == "BLOCKED"
     assert "CALLING BLOCKED" in blocked_call["restricted_status_message"]
     assert len(blocked_call["direct_contacts"]) == 0
 

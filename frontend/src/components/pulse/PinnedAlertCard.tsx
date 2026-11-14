@@ -110,7 +110,7 @@ export const PinnedAlertCard: React.FC<PinnedAlertCardProps> = ({
               title={`Call ${alert.metrics.connected_contact}`}
             >
               <Phone className="w-3 h-3 text-violet-400 stroke-[1.75]" />
-              <span className="hidden xs:inline">Scuttlebutt</span>
+              <span className="hidden xs:inline">Channel check</span>
             </button>
           )}
 

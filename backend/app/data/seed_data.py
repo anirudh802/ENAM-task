@@ -850,8 +850,8 @@ NETWORK_CONTACTS_SEED = [
         ],
         "themes": ["Specialty Chemicals", "Process Engineering", "Phenol & Aromatics"],
         "relevance_score": 9.1,
-        "recent_development_summary": "Independent chemical process consultant; deep technical knowledge of Deepak Nitrite's Dahej phenol capacity and feedstock dynamics.",
-        "notes": "Permissible technical expert for chemical yield curves and nitric acid / benzene feedstock cost pass-through.",
+        "recent_development_summary": "Independent chemical process consultant; deep technical knowledge of broader specialty chemical feedstock cycles and cost pass-through dynamics.",
+        "notes": "Permissible technical expert for general chemical manufacturing processes and nitric acid / benzene feedstock cost pass-through.",
         "last_verified": "2026-10-20",
         "last_contacted_date": "2026-08-04"
     },

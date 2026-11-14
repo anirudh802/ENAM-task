@@ -251,6 +251,15 @@ class FilingsEngine:
 
         raw_filings = []
         for r in rows:
+            net_conn = json.loads(r["network_connection"]) if r["network_connection"] else None
+            if net_conn:
+                from app.services.network_engine import NetworkEngine
+                comp = NetworkEngine.compliance_status(net_conn, r["ticker"])
+                net_conn["compliance"] = comp
+                net_conn["compliance_status"] = comp["status"]
+                net_conn["is_blocked"] = comp["is_blocked"]
+                net_conn["compliance_label"] = comp["label"]
+
             raw_filings.append({
                 "id": r["id"],
                 "isin": r["isin"],
@@ -266,7 +275,7 @@ class FilingsEngine:
                 "financial_basis": r["financial_basis"],
                 "headline_metrics": json.loads(r["headline_metrics"]) if r["headline_metrics"] else None,
                 "executive_profile": json.loads(r["executive_profile"]) if r["executive_profile"] else None,
-                "network_connection": json.loads(r["network_connection"]) if r["network_connection"] else None,
+                "network_connection": net_conn,
             })
 
         # Apply Cross-Exchange De-duplication (P-02)

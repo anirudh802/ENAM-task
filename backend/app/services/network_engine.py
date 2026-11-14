@@ -374,11 +374,24 @@ class NetworkEngine:
             f"Are upstream semiconductor and display module shipping turnaround times expanding or easing across the industry?"
         ]
 
+        # Determine overall compliance status using unified compliance logic
+        if is_restricted:
+            overall_comp_status = "BLOCKED"
+            overall_comp_label = "BLOCKED: RESTRICTED LIST"
+        elif any(c.get("compliance_status") == "CAUTION" for c in direct_contacts):
+            overall_comp_status = "CAUTION"
+            overall_comp_label = "CURRENT INSIDER CAUTION"
+        else:
+            overall_comp_status = "CLEAR"
+            overall_comp_label = "SEBI PIT COMPLIANT"
+
         return {
             "ticker": ticker_clean,
             "company_name": comp_name,
             "sector": sector,
             "is_restricted": is_restricted,
+            "compliance_status": overall_comp_status,
+            "compliance_label": overall_comp_label,
             "restricted_status_message": "CALLING BLOCKED: Company is on ENAM restricted list due to active mandates" if is_restricted else "Compliant",
             "direct_contacts": direct_contacts if not is_restricted else [],
             "competitor_contacts": competitor_contacts[:3],
