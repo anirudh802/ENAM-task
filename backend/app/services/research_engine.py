@@ -355,6 +355,9 @@ class ResearchEngine:
                 "market_cap_tier": market_cap_tier,
                 "template_type": "BFSI_BANK_NBFC" if is_bfsi else "INDUSTRIAL_EQUITY",
                 "coverage_assessment": coverage_info,
+                "coverage_line": coverage_info.get("coverage_line"),
+                "available_documents": coverage_info.get("available_documents", []),
+                "missing_documents": coverage_info.get("missing_documents", []),
                 "business_snapshot": {
                     "summary": description,
                     "segments": ResearchEngine._get_segments(ticker_clean),

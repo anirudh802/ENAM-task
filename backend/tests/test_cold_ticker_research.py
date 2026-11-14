@@ -88,7 +88,8 @@ def test_cold_ticker_infy_and_cache_speed():
 
 def test_arbitrary_unseeded_ticker_generalization():
     """
-    Verifies that finn can generalize to ANY arbitrary unseeded ticker (e.g. BHARATFORG).
+    Verifies that finn can generalize to ANY arbitrary unseeded ticker (e.g. BHARATFORG or UNKNOWN.NS).
+    Ensures coverage_line, available_documents, and missing_documents are populated without dead ends.
     """
     res = client.get("/api/pull/research/BHARATFORG")
     assert res.status_code == 200
@@ -97,3 +98,21 @@ def test_arbitrary_unseeded_ticker_generalization():
     assert data["financial_snapshot"]["current_revenue_cr"] > 0
     assert data["financial_snapshot"]["pat_cr"] > 0
     assert len(data["business_snapshot"]["segments"]) > 0
+
+    # Test BEL.NS
+    res_bel = client.get("/api/pull/research/BEL.NS")
+    assert res_bel.status_code == 200
+    data_bel = res_bel.json()
+    assert data_bel["ticker"] == "BEL.NS"
+    assert "Bharat Electronics" in data_bel["company_name"]
+    assert "transcripts" in data_bel["coverage_line"].lower()
+    assert len(data_bel["available_documents"]) > 0
+    assert len(data_bel["missing_documents"]) > 0
+
+    # Test UNKNOWN.NS
+    res_unk = client.get("/api/pull/research/UNKNOWN.NS")
+    assert res_unk.status_code == 200
+    data_unk = res_unk.json()
+    assert data_unk["ticker"] == "UNKNOWN.NS"
+    assert "transcripts" in data_unk["coverage_line"].lower()
+    assert len(data_unk["available_documents"]) > 0

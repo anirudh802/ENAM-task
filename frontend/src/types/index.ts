@@ -149,6 +149,9 @@ export interface PullResearch {
   coverage_assessment?: {
     coverage_pct: number;
     status: string;
+    coverage_line?: string;
+    available_documents?: string[];
+    missing_documents?: string[];
     breakdown: {
       concall_transcripts_available: number;
       latest_concall_quarter?: string | null;
@@ -157,6 +160,9 @@ export interface PullResearch {
     };
     is_ready_for_deepdive: boolean;
   };
+  coverage_line?: string;
+  available_documents?: string[];
+  missing_documents?: string[];
   business_snapshot: {
     summary: string;
     segments: Array<{ name: string; revenue_share_pct: number; margin_pct: number }>;

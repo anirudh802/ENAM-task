@@ -157,6 +157,10 @@ class PullResearchResponse(BaseModel):
     bull_case: List[str]
     bear_case: List[str]
     primary_sources_cited: List[str]
+    coverage_assessment: Optional[Dict[str, Any]] = None
+    coverage_line: Optional[str] = None
+    available_documents: Optional[List[str]] = None
+    missing_documents: Optional[List[str]] = None
 
 # --- Network Domain ---
 class NetworkContact(BaseModel):

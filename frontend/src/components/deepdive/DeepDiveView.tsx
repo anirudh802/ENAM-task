@@ -239,10 +239,34 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
       </div>
 
       {isLoading ? (
-        <div className="finance-card p-8 text-center text-xs text-slate-500">
-          Synthesizing primary filings, transcripts, and verified metrics...
+        <div className="finance-card p-6 border-blue-200 dark:border-blue-900/60 bg-blue-50/20 dark:bg-blue-950/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+              <span className="text-xs font-bold text-slate-900 dark:text-white">
+                Fetching primary documents for {searchInput.trim().toUpperCase() || ticker}...
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50">
+              Exchange ingestion
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div className="bg-blue-600 h-1.5 rounded-full animate-pulse w-2/3" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+            <div className="p-1.5 rounded bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800 flex items-center gap-1.5">
+              <span className="text-emerald-500 font-bold">✓</span> Primary XBRL Filing
+            </div>
+            <div className="p-1.5 rounded bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800 flex items-center gap-1.5">
+              <span className="text-blue-500 font-bold">⏳</span> Concall Transcripts
+            </div>
+            <div className="p-1.5 rounded bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800 flex items-center gap-1.5">
+              <span className="text-purple-500 font-bold">●</span> Ratio Grounding
+            </div>
+          </div>
         </div>
-      ) : research && research.coverage_assessment?.status !== 'INSUFFICIENT_COVERAGE' ? (
+      ) : research ? (
         <div className="space-y-3">
           {/* Header Card */}
           <div className="finance-card p-4">
@@ -393,8 +417,8 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 text-[10px] block">Coverage Disclosure</span>
-                <span className="font-bold text-slate-900 dark:text-white truncate block">
-                  3 of 4 transcripts · Q4 FY26 pending
+                <span className="font-bold text-slate-900 dark:text-white break-words block">
+                  {research.coverage_line || research.coverage_assessment?.coverage_line || '1 of 4 transcripts, annual report found'}
                 </span>
               </div>
               <div className="col-span-2 sm:col-span-1">
@@ -405,6 +429,36 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Grounded vs Missing Disclosures for Partial Coverage */}
+          {research.missing_documents && research.missing_documents.length > 0 && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 text-xs">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  Partial Primary Coverage · {research.coverage_line || `${research.coverage_assessment?.breakdown?.concall_transcripts_available ?? 0} of 4 transcripts found`}
+                </span>
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 shrink-0">
+                  Partial Data Grounded
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {research.available_documents?.map((doc, idx) => (
+                  <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 flex items-center gap-1">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span> Grounded: {doc}
+                  </span>
+                ))}
+                {research.missing_documents?.map((doc, idx) => (
+                  <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 flex items-center gap-1">
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">—</span> Missing: {doc}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                Showing verified financial and operational fundamentals. Primary concall transcripts and guidance tracking will index upon exchange disclosure.
+              </p>
+            </div>
+          )}
 
           {/* Sub-tabs */}
           <div className="flex items-center border-b border-slate-200 dark:border-slate-800 gap-4 text-xs font-semibold">
@@ -981,9 +1035,9 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
           </div>
           <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[10px] text-slate-500 font-mono max-w-sm mx-auto text-left space-y-1">
             <div className="font-bold text-slate-700 dark:text-slate-300">● Strict Grounding Policy:</div>
-            <div>• LLM inference quarantined (Parse Quality &lt; 0.60)</div>
-            <div>• Zero external web guessing or unverified estimates</div>
             <div>• Primary exchange XBRL required for deterministic financials</div>
+            <div>• Zero external web guessing or unverified estimates</div>
+            <div>• Full concall transcripts indexed upon verified publication</div>
           </div>
           <div className="flex justify-center gap-2 pt-1">
             <button

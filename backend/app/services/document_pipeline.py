@@ -105,7 +105,41 @@ class DocumentPipeline:
         if guidance_count > 0:
             coverage_pct += 15.0
 
-        status = "FULL_COVERAGE" if coverage_pct >= 85.0 else ("PARTIAL_COVERAGE" if coverage_pct >= 50.0 else "INSUFFICIENT_COVERAGE")
+        status = "FULL_COVERAGE" if coverage_pct >= 80.0 else ("PARTIAL_COVERAGE" if has_baseline else "INSUFFICIENT_COVERAGE")
+        is_ready = bool(has_baseline)
+
+        concalls_available = concall_count
+        concalls_target = 4
+        has_annual_report = bool(has_baseline)
+        has_guidance = guidance_count > 0
+        has_announcements = ann_count > 0
+
+        if concalls_available > 0 and has_annual_report:
+            coverage_line = f"{concalls_available} of {concalls_target} transcripts, annual report found"
+        elif concalls_available > 0:
+            coverage_line = f"{concalls_available} of {concalls_target} transcripts found"
+        elif has_annual_report:
+            coverage_line = f"0 of {concalls_target} transcripts, annual report found"
+        else:
+            coverage_line = "Primary exchange disclosures pending ingestion"
+
+        available_docs = []
+        if has_annual_report:
+            available_docs.append("Annual Report FY26 & Audited Statements")
+        if concalls_available > 0:
+            available_docs.append(f"{concalls_available} of {concalls_target} Concall Transcripts")
+        if has_announcements:
+            available_docs.append(f"{ann_count} Exchange LODR Announcement(s)")
+        if has_guidance:
+            available_docs.append(f"{guidance_count} Guidance Track Records")
+
+        missing_docs = []
+        if concalls_available < concalls_target:
+            missing_docs.append(f"{concalls_target - concalls_available} Quarter Concall Transcript(s)")
+        if not has_guidance:
+            missing_docs.append("Historical Management Guidance History")
+        if not has_annual_report:
+            missing_docs.append("Annual Report & XBRL Statements")
 
         return {
             "ticker": ticker,
@@ -113,11 +147,14 @@ class DocumentPipeline:
             "company_name": comp["name"] if comp else None,
             "coverage_pct": round(coverage_pct, 1),
             "status": status,
+            "coverage_line": coverage_line,
+            "available_documents": available_docs,
+            "missing_documents": missing_docs,
             "breakdown": {
                 "concall_transcripts_available": concall_count,
                 "latest_concall_quarter": latest_concall_qtr,
                 "regulatory_announcements_count": ann_count,
                 "guidance_track_records_count": guidance_count
             },
-            "is_ready_for_deepdive": coverage_pct >= 50.0
+            "is_ready_for_deepdive": is_ready
         }
