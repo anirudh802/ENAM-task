@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NetworkContact, WhoToCallResponse, SecondDegreePath } from '../../types';
 import { api } from '../../services/api';
+import { ActionButton } from '../common/ActionButton';
 import {
   Star,
   Phone,
@@ -286,121 +287,109 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
         <div className="space-y-2.5">
           {/* Notice 1: Warm Reconnect (Pooja Singhania / Trent results) */}
-          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] mb-1">
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-mono flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
                 <Clock className="w-3 h-3" /> Warm Reconnect Hook
               </span>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                Last Contact: 14 Aug 2026 (92d ago)
-              </span>
+              <ActionButton
+                variant="primary"
+                icon={Phone}
+                label="Reconnect"
+                onClick={() => onCallContact && onCallContact('Pooja Singhania')}
+              />
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Pooja Singhania — Chief Merchandising Officer, Nykaa Fashion
               </h4>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+              <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                Last Contact: 14 Aug 2026 (92d ago)
+              </p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-1">
                 Ex-Head of Zudio Merchandising at Trent. Her former employer <strong>Trent Ltd</strong> disclosed Q2 results today (+39.1% YoY revenue growth, crossing 570 stores). Recommended hook: retail replenishment velocity and tier 2/3 apparel demand.
               </p>
-            </div>
-            <div className="flex items-center justify-end pt-1">
-              <button
-                onClick={() => onCallContact && onCallContact('Pooja Singhania')}
-                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium flex items-center gap-1.5 transition shadow-sm active:scale-95"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                <span>Initiate Warm Reconnect</span>
-              </button>
             </div>
           </div>
 
           {/* Notice 2: Client Sourcing Intel (Rohan Deshmukh / Dixon) */}
-          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] mb-1">
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono flex items-center gap-1 border border-blue-200 dark:border-blue-800/40 shrink-0">
                 <Users className="w-3 h-3" /> Key Client Channel Check
               </span>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                Last Contact: 12 Sep 2026 (63d ago)
-              </span>
+              <ActionButton
+                variant="primary"
+                icon={Phone}
+                label="Channel check"
+                onClick={() => {
+                  setSelectedTicker('DIXON.NS');
+                  fetchWhoToCall('DIXON.NS');
+                }}
+              />
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Rohan Deshmukh — Director of Sourcing, Xiaomi India
               </h4>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+              <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                Last Contact: 12 Sep 2026 (63d ago)
+              </p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-1">
                 Ex-Dixon operations manager (2018–21), now leading component sourcing at Xiaomi (Dixon's anchor smartphone OEM client). Best placed to cross-check general mobile component lead times and festive retail sell-through.
               </p>
-            </div>
-            <div className="flex items-center justify-end pt-1">
-              <button
-                onClick={() => {
-                  setSelectedTicker('DIXON.NS');
-                  fetchWhoToCall('DIXON.NS');
-                }}
-                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 text-xs font-medium flex items-center gap-1.5 transition shadow-sm active:scale-95"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Channel check</span>
-              </button>
             </div>
           </div>
 
           {/* Notice 3: Executive Transition Diligence (Vikram Seth / Kaynes via Ananya Roy) */}
-          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] mb-1">
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono flex items-center gap-1 border border-amber-200 dark:border-amber-800/40 shrink-0">
                 <Share2 className="w-3 h-3" /> 2nd-Degree Executive Transition Bridge
               </span>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                Target: External Leadership
-              </span>
+              <ActionButton
+                variant="primary"
+                icon={Share2}
+                label="Intro path"
+                onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
+              />
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Vikram Seth — Chief Operating Officer, Kaynes Technology
               </h4>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+              <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                Target: External Leadership
+              </p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-1">
                 Newly appointed COO at Kaynes (former Senior VP Manufacturing at Dixon Technologies). 2nd-degree bridge identified via <strong>Ananya Roy</strong> (Ex-colleagues at Foxconn India, IIT Kanpur 2004 Batchmate).
               </p>
-            </div>
-            <div className="flex items-center justify-end pt-1">
-              <button
-                onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
-                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>View Intro Path</span>
-              </button>
             </div>
           </div>
 
           {/* Notice 4: Feedstock Advisory (Dr. Arvind Swaminathan / Deepak Nitrite) */}
-          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] mb-1">
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono flex items-center gap-1 border border-indigo-200 dark:border-indigo-800/40 shrink-0">
                 <Info className="w-3 h-3" /> Chemical Feedstock Cycle Advisory
               </span>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                Last Contact: 04 Aug 2026 (102d ago)
-              </span>
+              <ActionButton
+                variant="primary"
+                icon={Phone}
+                label="Consult"
+                onClick={() => onCallContact && onCallContact('Dr. Arvind Swaminathan')}
+              />
             </div>
             <div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                 Dr. Arvind Swaminathan — Specialty Chemicals Technical Advisor
               </h4>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+              <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                Last Contact: 04 Aug 2026 (102d ago)
+              </p>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-1">
                 Global phenol & acetone benchmark spreads expanded 140 bps this week. Dr. Swaminathan is your primary technical expert on industry-wide chemical feedstock cycles and benzene cost pass-through dynamics.
               </p>
-            </div>
-            <div className="flex items-center justify-end pt-1">
-              <button
-                onClick={() => onCallContact && onCallContact('Dr. Arvind Swaminathan')}
-                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                <span>Consult Technicals</span>
-              </button>
             </div>
           </div>
         </div>
@@ -523,59 +512,58 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
             {/* External Bridge for Ananya Roy (De-duplicated Intro Path) */}
             {contact.name === 'Ananya Roy' && (
-              <div className="mb-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 border-l-2 border-l-blue-500 p-2.5 rounded-md text-xs flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] flex items-center gap-1">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 stroke-[1.75]" />
-                    <span>2nd-Degree Reach: Vikram Seth (COO, Kaynes Tech)</span>
+              <div className="mb-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 border-l-2 border-l-blue-500 p-2 rounded-md text-xs">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] flex items-center gap-1 min-w-0 truncate">
+                    <ArrowUpRight className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 stroke-[1.75] shrink-0" />
+                    <span className="truncate">2nd-Degree Reach: Vikram Seth (COO, Kaynes Tech)</span>
                   </span>
-                  <p className="text-[10px] text-slate-600 dark:text-slate-400">
-                    Ex-colleagues at Foxconn India (Primary) & IIT Kanpur alumni bridge available.
-                  </p>
+                  <ActionButton
+                    variant="ghost"
+                    icon={Share2}
+                    label="Intro path"
+                    onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
+                  />
                 </div>
-                <button
-                  onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
-                  className="min-h-[44px] px-3 py-1.5 rounded-md bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1 transition shrink-0 active:scale-95"
-                >
-                  <Share2 className="w-3.5 h-3.5 stroke-[1.75]" />
-                  <span>Intro Path</span>
-                </button>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">
+                  Ex-colleagues at Foxconn India (Primary) & IIT Kanpur alumni bridge available.
+                </p>
               </div>
             )}
 
-            {/* Action Bar with 5-Segment Relevance Meter and Pre-Outreach Compliance Lock */}
-            <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800 text-xs gap-2 flex-wrap">
-              {renderRelevanceMeter(contact)}
+            {/* Action Bar with 5-Segment Relevance Meter and Inline Action Buttons */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs gap-2">
+              <div className="min-w-0 flex-1">
+                {renderRelevanceMeter(contact)}
+              </div>
 
-              <div className="flex items-center gap-2">
-                <button
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                <ActionButton
+                  variant="icon"
+                  icon={Info}
+                  label="Channel Intel"
+                  title="Channel Intel"
+                  aria-label="Channel Intel"
                   onClick={() => {
                     setSelectedTicker(contact.current_company_ticker || 'DIXON.NS');
                     fetchWhoToCall(contact.current_company_ticker || 'DIXON.NS');
                   }}
-                  className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium border border-slate-300 dark:border-slate-700 flex items-center gap-1 transition active:scale-95"
-                >
-                  <span>Channel Intel</span>
-                </button>
+                />
 
-                {/* Pre-Outreach Compliance Lock (Report Item 109) */}
                 {contact.compliance_restricted ? (
-                  <button
+                  <ActionButton
                     disabled
-                    className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 text-xs font-medium border border-slate-300 dark:border-slate-700/80 cursor-not-allowed flex items-center gap-1.5 opacity-80"
-                    title={contact.compliance_reason || 'Restricted List: Active MNPI Embargo'}
-                  >
-                    <Lock className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Restricted: MNPI</span>
-                  </button>
+                    disabledReason={contact.compliance_reason || 'Restricted List: Active MNPI Embargo'}
+                    label="Restricted"
+                    aria-label={contact.compliance_reason || 'Restricted List: Active MNPI Embargo'}
+                  />
                 ) : (
-                  <button
+                  <ActionButton
+                    variant="primary"
+                    icon={Phone}
+                    label="Channel check"
                     onClick={() => onCallContact && onCallContact(contact.name)}
-                    className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium flex items-center gap-1.5 transition border border-violet-400/20 shadow-sm active:scale-95"
-                  >
-                    <Phone className="w-3.5 h-3.5 stroke-[1.75]" />
-                    <span>Channel check</span>
-                  </button>
+                  />
                 )}
               </div>
             </div>

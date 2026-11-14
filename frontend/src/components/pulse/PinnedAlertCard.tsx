@@ -1,6 +1,7 @@
 import React from 'react';
 import { Anomaly } from '../../types';
 import { X, ArrowUpRight, Phone, TrendingUp, UserCheck } from 'lucide-react';
+import { ActionButton } from '../common/ActionButton';
 
 interface PinnedAlertCardProps {
   alert: Anomaly | null;
@@ -104,23 +105,20 @@ export const PinnedAlertCard: React.FC<PinnedAlertCardProps> = ({
 
         <div className="flex items-center gap-1.5 shrink-0">
           {alert.metrics?.connected_contact && onCallContact && (
-            <button
+            <ActionButton
+              variant="primary"
+              icon={Phone}
+              label="Channel check"
               onClick={() => onCallContact(alert.metrics.connected_contact)}
-              className="min-h-[44px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-sans text-[11px] font-medium flex items-center gap-1 transition active:scale-95"
-              title={`Call ${alert.metrics.connected_contact}`}
-            >
-              <Phone className="w-3 h-3 text-violet-400 stroke-[1.75]" />
-              <span className="hidden xs:inline">Channel check</span>
-            </button>
+            />
           )}
 
-          <button
+          <ActionButton
+            variant="ghost"
+            icon={ArrowUpRight}
+            label={`Research ${alert.ticker.replace('.NS', '')}`}
             onClick={() => onInvestigate(alert.ticker)}
-            className="min-h-[44px] px-2.5 py-1 rounded bg-blue-600/90 hover:bg-blue-500 text-white font-sans text-[11px] font-medium border border-blue-400/20 flex items-center gap-1 transition active:scale-95 shrink-0"
-          >
-            <span>Research {alert.ticker.replace('.NS', '')}</span>
-            <ArrowUpRight className="w-3.5 h-3.5 stroke-[2]" />
-          </button>
+          />
         </div>
       </div>
     </div>

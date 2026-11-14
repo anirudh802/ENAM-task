@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Anomaly, UserPreferences } from '../../types';
 import { Sliders, Pin, ArrowUpRight, Zap } from 'lucide-react';
+import { ActionButton } from '../common/ActionButton';
 
 interface RadarViewProps {
   anomalies: Anomaly[];
@@ -341,13 +342,12 @@ export const RadarView: React.FC<RadarViewProps> = ({
                 )}
               </div>
 
-              <button
+              <ActionButton
+                variant="ghost"
+                icon={ArrowUpRight}
+                label="DeepDive"
                 onClick={() => onInvestigateTicker(anom.ticker)}
-                className="min-h-[44px] px-3 py-1 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 shrink-0"
-              >
-                <span>DeepDive</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
+              />
             </div>
           </div>
         ))

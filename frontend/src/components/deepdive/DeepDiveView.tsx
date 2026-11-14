@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PullResearch } from '../../types';
 import { api } from '../../services/api';
+import { ActionButton } from '../common/ActionButton';
 import {
   Search,
   CheckCircle2,
@@ -334,13 +335,12 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                 </p>
               </div>
 
-              <button
+              <ActionButton
+                variant="ghost"
+                icon={ArrowRight}
+                label="Who to Call"
                 onClick={() => onSelectNetworkForTicker(research.ticker)}
-                className="bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 font-medium text-xs px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 shrink-0 active:scale-95 shadow-sm"
-              >
-                <span>Who to Call</span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-              </button>
+              />
             </div>
 
             {/* Cold Ticker / Ingest Coverage Indicator (D-08) */}

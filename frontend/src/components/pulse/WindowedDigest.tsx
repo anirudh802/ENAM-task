@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DigestResponse } from '../../types';
-import { ChevronDown, ChevronUp, ArrowUpRight, UserCheck, Layers, User, GraduationCap, FileText, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUpRight, UserCheck, Layers, User, GraduationCap, FileText, Sparkles, Phone } from 'lucide-react';
+import { ActionButton } from '../common/ActionButton';
 
 interface WindowedDigestProps {
   digest: DigestResponse | null;
@@ -249,14 +250,14 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
                   >
                     {formatFreshness(filing.filing_time)}
                   </span>
-                  <button
+                  <ActionButton
+                    variant="ghost"
+                    icon={ArrowUpRight}
+                    label="DeepDive"
                     onClick={() => onSelectTicker(filing.ticker)}
-                    className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                    title="DeepDive pull research"
+                    title={`DeepDive pull research for ${filing.ticker}`}
                     aria-label={`Open DeepDive for ${filing.ticker}`}
-                  >
-                    <ArrowUpRight className="w-4 h-4 stroke-[2]" />
-                  </button>
+                  />
                 </div>
               </div>
 
@@ -364,40 +365,38 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
               {/* Dedicated Violet Personal Network Strip with Explicit "Why" Reason */}
               {filing.network_connection && (
                 <div className="bg-violet-50/70 dark:bg-violet-950/20 border border-violet-200/80 dark:border-violet-900/50 border-l-2 border-l-violet-500 p-2.5 rounded-lg text-xs mt-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2">
-                      <div className="p-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 mt-0.5 shrink-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                      <div className="p-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 shrink-0">
                         <UserCheck className="w-3.5 h-3.5 stroke-[2]" />
                       </div>
-                      <div>
-                        <div className="font-semibold text-slate-900 dark:text-slate-100 text-[11px] flex items-center gap-1.5 flex-wrap">
-                          <span>{filing.network_connection.connected_person_name}</span>
-                          <span className="text-[9px] text-violet-700 dark:text-violet-300 font-mono font-medium px-1.5 py-0.2 rounded bg-violet-100 dark:bg-violet-900/60">
-                            {filing.network_connection.degree_of_separation === 1 ? '1st Degree' : '2nd Degree'}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
-                          {filing.network_connection.relationship}
-                        </p>
-                        {filing.network_connection.why_line && (
-                          <p className="text-[11px] text-slate-700 dark:text-slate-200 mt-1.5 leading-snug bg-white/60 dark:bg-slate-900/60 p-1.5 rounded border border-violet-200/50 dark:border-violet-900/40">
-                            <strong className="text-violet-700 dark:text-violet-300 font-semibold">Why to call: </strong>
-                            {filing.network_connection.why_line}
-                          </p>
-                        )}
-                      </div>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 text-[11px] truncate">
+                        {filing.network_connection.connected_person_name}
+                      </span>
+                      <span className="text-[9px] text-violet-700 dark:text-violet-300 font-mono font-medium px-1.5 py-0.2 rounded bg-violet-100 dark:bg-violet-900/60 shrink-0">
+                        {filing.network_connection.degree_of_separation === 1 ? '1st Degree' : '2nd Degree'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        • {filing.network_connection.relationship}
+                      </span>
                     </div>
                     {onCallContact && (
-                      <button
-                        onClick={() => onCallContact(filing.network_connection!.connected_person_name)}
-                        className="min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/60 border border-violet-300 dark:border-violet-800 font-medium text-[11px] active:scale-95 transition flex items-center justify-center shrink-0 shadow-xs"
-                        title={`Channel check outreach to ${filing.network_connection.connected_person_name}`}
+                      <ActionButton
+                        variant="icon"
+                        icon={Phone}
+                        label="Channel check"
+                        title={`Channel check: ${filing.network_connection.connected_person_name}`}
                         aria-label={`Channel check outreach to ${filing.network_connection.connected_person_name}`}
-                      >
-                        Channel check
-                      </button>
+                        onClick={() => onCallContact(filing.network_connection!.connected_person_name)}
+                      />
                     )}
                   </div>
+                  {filing.network_connection.why_line && (
+                    <p className="text-[12px] text-slate-700 dark:text-slate-200 mt-1.5 leading-snug">
+                      <span className="text-violet-700 dark:text-violet-300 font-semibold">Why to call: </span>
+                      {filing.network_connection.why_line}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

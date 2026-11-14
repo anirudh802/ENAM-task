@@ -13,10 +13,12 @@ import {
   ExternalLink,
   ShieldAlert,
   Phone,
-  FileText
+  FileText,
+  ArrowUpRight
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { AskResponse, AskCard } from '../../types';
+import { ActionButton } from '../common/ActionButton';
 
 interface AskBarProps {
   onNavigateTab: (tab: 'pulse' | 'radar' | 'deepdive' | 'nexus', ticker?: string) => void;
@@ -367,29 +369,27 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
                             {/* Compliance Check / Trigger */}
                             {card.data.compliance_restricted ? (
                               <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
                                   <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-                                  <span>{card.data.compliance_reason}</span>
+                                  <span className="truncate">{card.data.compliance_reason}</span>
                                 </div>
-                                <button
+                                <ActionButton
                                   disabled
-                                  className="px-2.5 py-1 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded text-[10px] font-bold cursor-not-allowed shrink-0"
-                                >
-                                  🔒 Blocked
-                                </button>
+                                  disabledReason={card.data.compliance_reason || 'Restricted List: Active MNPI Embargo'}
+                                  label="Blocked"
+                                />
                               </div>
                             ) : (
                               <div className="flex items-center justify-end gap-2">
-                                <button
+                                <ActionButton
+                                  variant="primary"
+                                  icon={Phone}
+                                  label="Channel check"
                                   onClick={() => {
                                     onCallContact(card.data.name);
                                     handleClose();
                                   }}
-                                  className="min-h-[44px] px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition shadow-xs active:scale-95"
-                                >
-                                  <Phone className="w-3.5 h-3.5" />
-                                  <span>Reach Out ({card.data.name.split(' ')[0]})</span>
-                                </button>
+                                />
                               </div>
                             )}
                           </div>
@@ -538,16 +538,17 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
                               ))}
                             </div>
 
-                            <button
-                              onClick={() => {
-                                onNavigateTab('deepdive', card.data.ticker);
-                                handleClose();
-                              }}
-                              className="w-full min-h-[44px] py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
-                            >
-                              <span>Explore Full Research DeepDive</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex justify-end pt-1">
+                              <ActionButton
+                                variant="ghost"
+                                icon={ArrowUpRight}
+                                label="DeepDive"
+                                onClick={() => {
+                                  onNavigateTab('deepdive', card.data.ticker);
+                                  handleClose();
+                                }}
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -556,19 +557,18 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
 
                   {/* Deep Navigation Action Pills */}
                   {response.actions && response.actions.length > 0 && (
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
                       {response.actions.map((act, actIdx) => (
-                        <button
+                        <ActionButton
                           key={actIdx}
+                          variant={act.label.toLowerCase().includes('deepdive') ? 'ghost' : 'primary'}
+                          icon={act.label.toLowerCase().includes('deepdive') ? ArrowUpRight : ArrowRight}
+                          label={act.label.toLowerCase().includes('deepdive') ? 'DeepDive' : act.label}
                           onClick={() => {
                             onNavigateTab(act.tab, act.ticker || undefined);
                             handleClose();
                           }}
-                          className="min-h-[44px] px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-sm active:scale-95"
-                        >
-                          <span>{act.label}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                        />
                       ))}
                     </div>
                   )}
