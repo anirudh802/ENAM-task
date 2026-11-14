@@ -216,6 +216,8 @@ export interface PullResearch {
   bull_case: string[];
   bear_case: string[];
   primary_sources_cited: string[];
+  has_reg33_filing?: boolean;
+  xbrl_filing_grounded?: boolean;
 }
 
 export interface NetworkContact {

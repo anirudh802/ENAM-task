@@ -161,6 +161,8 @@ class PullResearchResponse(BaseModel):
     coverage_line: Optional[str] = None
     available_documents: Optional[List[str]] = None
     missing_documents: Optional[List[str]] = None
+    has_reg33_filing: bool = False
+    xbrl_filing_grounded: bool = False
 
 # --- Network Domain ---
 class NetworkContact(BaseModel):

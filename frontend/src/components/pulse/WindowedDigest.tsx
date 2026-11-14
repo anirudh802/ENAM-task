@@ -332,7 +332,7 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
                   <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                     <span className="flex items-center gap-1">
                       <FileText className="w-3 h-3 text-slate-400" />
-                      Reg 33 XBRL Grounded · Primary Disclosure
+                      {filing.category === 'results' && filing.headline_metrics ? 'Reg 33 XBRL Grounded · Primary Disclosure' : 'Seeded demo data'}
                     </span>
                     <span>Consolidated</span>
                   </div>

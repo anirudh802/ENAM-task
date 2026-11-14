@@ -347,6 +347,13 @@ class ResearchEngine:
             else:
                 business_moat = ResearchEngine._default_moat(ticker_clean)
 
+            # Check if figures originate from an indexed primary Reg 33 filing (Item 10)
+            cursor.execute("""
+                SELECT COUNT(*) FROM announcements
+                WHERE ticker = ? AND category = 'results' AND headline_metrics IS NOT NULL;
+            """, (ticker_clean,))
+            has_reg33 = cursor.fetchone()[0] > 0
+
             payload = {
                 "isin": isin,
                 "ticker": ticker_clean,
@@ -358,6 +365,8 @@ class ResearchEngine:
                 "coverage_line": coverage_info.get("coverage_line"),
                 "available_documents": coverage_info.get("available_documents", []),
                 "missing_documents": coverage_info.get("missing_documents", []),
+                "has_reg33_filing": has_reg33,
+                "xbrl_filing_grounded": has_reg33,
                 "business_snapshot": {
                     "summary": description,
                     "segments": ResearchEngine._get_segments(ticker_clean),

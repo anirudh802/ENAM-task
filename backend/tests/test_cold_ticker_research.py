@@ -46,6 +46,15 @@ def test_cold_ticker_normalization_and_research():
     assert cash["cash_conversion_ratio"] > 0
     assert cash["working_capital_days"] is not None
 
+    # 6. Verify Reg 33 filing grounding flag (Item 10)
+    assert data.get("has_reg33_filing") is False
+    assert data.get("xbrl_filing_grounded") is False
+
+    # Check that Dixon (which has an indexed results filing) is marked grounded
+    res_dixon = client.get("/api/pull/research/DIXON.NS")
+    assert res_dixon.status_code == 200
+    assert res_dixon.json().get("has_reg33_filing") is True
+    assert res_dixon.json().get("xbrl_filing_grounded") is True
     # 5. Check business snapshot & moat
     biz = data["business_snapshot"]
     assert biz["summary"] is not None

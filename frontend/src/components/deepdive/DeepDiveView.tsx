@@ -456,8 +456,8 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               </div>
               <div className="col-span-2 sm:col-span-1">
                 <span className="text-slate-400 text-[10px] block">Primary Grounding</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  100% Audited Excerpts
+                <span className={`font-bold ${research.has_reg33_filing || research.xbrl_filing_grounded ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {research.has_reg33_filing || research.xbrl_filing_grounded ? 'Reg 33 XBRL Grounded' : 'Seeded demo data'}
                 </span>
               </div>
             </div>
@@ -674,7 +674,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                         </p>
                       </div>
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        XBRL Grounded
+                        {research.has_reg33_filing || research.xbrl_filing_grounded ? 'Reg 33 XBRL Grounded' : 'Seeded demo data'}
                       </span>
                     </div>
 
