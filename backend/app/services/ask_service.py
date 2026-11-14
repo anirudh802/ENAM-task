@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from app.db.database import get_db
-from app.services.network_engine import network_engine, DEFAULT_TENANT_ID
+from app.services.network_engine import network_engine, NetworkEngine, DEFAULT_TENANT_ID
 from app.services.research_engine import ResearchEngine
 from app.services.filings_engine import FilingsEngine
 from app.services.anomaly_detector import AnomalyDetector
@@ -107,26 +107,41 @@ class AskService:
                 feed = network_engine.get_network_feed(tenant_id=tenant_id)
                 contacts = [c for c in feed if target_ticker.split(".")[0].lower() in (c.get("notes") or "").lower() or target_ticker.split(".")[0].lower() in (c.get("current_company") or "").lower()]
 
-            # Check if Dixon or restricted
-            compliance_restricted = target_ticker == "DIXON.NS"
-            compliance_reason = "Restricted List: Active SEBI MNPI results blackout until 18 Nov 2026" if compliance_restricted else None
-
-            # Enhance contacts with compliance state
+            # Evaluate compliance using unified compliance_status
             enhanced_contacts = []
-            for c in contacts[:2]:
+            for c in contacts:
                 c_dict = dict(c)
-                c_dict["compliance_restricted"] = compliance_restricted
-                c_dict["compliance_reason"] = compliance_reason
+                comp = NetworkEngine.compliance_status(c_dict, target_ticker)
+                c_dict["compliance"] = comp
+                c_dict["compliance_restricted"] = comp["is_blocked"]
+                c_dict["compliance_reason"] = comp["reason"]
+                c_dict["compliance_status"] = comp["status"]
+                c_dict["compliance_label"] = comp["label"]
+                c_dict["compliance_block_ends"] = comp["block_ends"]
+                if not c_dict.get("why_line"):
+                    c_dict["why_line"] = c_dict.get("notes") or c_dict.get("recent_development_summary") or ""
                 enhanced_contacts.append(c_dict)
 
-            top_contact = enhanced_contacts[0] if enhanced_contacts else None
-            if top_contact:
-                restr_text = " [Note: Active SEBI MNPI blackout until 18 Nov]" if compliance_restricted else ""
+            # Put the first unblocked contact first
+            enhanced_contacts.sort(key=lambda c: 1 if c.get("compliance_restricted") else 0)
+
+            unblocked_contacts = [c for c in enhanced_contacts if not c.get("compliance_restricted")]
+
+            if not unblocked_contacts and enhanced_contacts:
+                block_date = enhanced_contacts[0].get("compliance_block_ends") or "18 Nov 2026"
+                summary = f"All network contacts for {target_ticker} are currently blocked under active SEBI MNPI embargo until {block_date}."
+            elif enhanced_contacts:
+                top_contact = enhanced_contacts[0]
+                role_desc = top_contact.get("current_title", "Executive")
+                curr_comp = top_contact.get("current_company", "")
+                if curr_comp and curr_comp.lower() not in role_desc.lower():
+                    role_desc = f"{role_desc} at {curr_comp}"
+                why_text = top_contact.get("why_line") or top_contact.get("notes") or ""
                 summary = (
-                    f"{top_contact['name']} ({top_contact.get('current_title', 'Executive')} at {top_contact.get('current_company', 'Firm')}) "
+                    f"{top_contact['name']} ({role_desc}) "
                     f"is your primary contact for {target_ticker} (Relevance {top_contact.get('relevance_score', 9.0)}/10). "
-                    f"{top_contact.get('why_line') or top_contact.get('relevance_rationale')}{restr_text}"
-                )
+                    f"{why_text}"
+                ).strip()
             else:
                 summary = f"No primary network contacts indexed for {target_ticker}."
 
@@ -140,7 +155,7 @@ class AskService:
                     {
                         "card_type": "network_contact",
                         "data": c
-                    } for c in enhanced_contacts
+                    } for c in enhanced_contacts[:2]
                 ],
                 "actions": [
                     {
@@ -154,16 +169,26 @@ class AskService:
 
         # 2. GUIDANCE INTENT
         if intent == "GUIDANCE":
-            target_ticker = matched_ticker or "TRENT.NS"
+            target_ticker = matched_ticker or "DIXON.NS"
             research = ResearchEngine.get_company_research(target_ticker)
-            guidance_items = research.get("guidance_items", [])
-            beats = sum(1 for g in guidance_items if g.get("status") == "BEAT")
+            guidance_items = research.get("narrative_vs_numbers") or research.get("guidance_items") or []
             total = len(guidance_items)
 
-            summary = (
-                f"{research.get('company_name', target_ticker)}: {beats}/{total} guidance items BEAT over recent quarters. "
-                f"Track record shows disciplined capital allocation with positive corridor actuals."
-            )
+            if total == 0:
+                summary = f"{research.get('company_name', target_ticker)}: No guidance extracted yet."
+            else:
+                beats = sum(1 for g in guidance_items if g.get("status") == "BEAT")
+                met = sum(1 for g in guidance_items if g.get("status") == "MET")
+                missed = sum(1 for g in guidance_items if g.get("status") == "MISSED")
+                parts = []
+                if beats:
+                    parts.append(f"{beats} BEAT")
+                if met:
+                    parts.append(f"{met} MET")
+                if missed:
+                    parts.append(f"{missed} MISSED")
+                breakdown = ", ".join(parts) if parts else f"{beats}/{total} BEAT"
+                summary = f"{research.get('company_name', target_ticker)}: {total} guidance item{'s' if total != 1 else ''} tracked ({breakdown})."
 
             return {
                 "query": query,

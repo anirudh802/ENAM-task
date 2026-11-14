@@ -132,6 +132,59 @@ class NetworkEngine:
     def invalidate_tenant_graph(self, tenant_id: str = DEFAULT_TENANT_ID):
         self._tenant_graphs.pop(tenant_id, None)
 
+    @staticmethod
+    def compliance_status(contact: Dict[str, Any], company_ticker: Optional[str] = None, restricted_list: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Unified compliance status evaluator for network contacts under SEBI PIT regulations.
+        Returns a clear result: status ('CLEAR' | 'BLOCKED' | 'CAUTION'), is_blocked, label, reason, block_ends.
+        """
+        target = (company_ticker or contact.get("current_company_ticker") or "").upper().strip()
+        restr_set = set(t.upper().strip() for t in (restricted_list or []))
+
+        # 1. Company on explicit firm restricted list
+        if target and (target in restr_set or target.replace(".NS", "") in restr_set):
+            return {
+                "status": "BLOCKED",
+                "is_blocked": True,
+                "label": "BLOCKED: RESTRICTED LIST",
+                "reason": "Restricted List: Active mandate embargo until 18 Nov 2026",
+                "block_ends": "18 Nov 2026"
+            }
+
+        # 2. Contact has explicit compliance restriction
+        if contact.get("compliance_restricted"):
+            return {
+                "status": "BLOCKED",
+                "is_blocked": True,
+                "label": "BLOCKED: RESTRICTED",
+                "reason": contact.get("compliance_reason") or "Restricted List: Active SEBI MNPI results blackout until 18 Nov 2026",
+                "block_ends": "18 Nov 2026"
+            }
+
+        # 3. Current employee of target company -> CAUTION (Not a clear result)
+        curr_ticker = (contact.get("current_company_ticker") or "").upper().strip()
+        curr_comp = (contact.get("current_company") or "").lower()
+        target_base = target.split(".")[0].lower() if target else ""
+
+        is_current_employee = (curr_ticker == target and target != "") or (target_base and target_base in curr_comp)
+        if is_current_employee or contact.get("compliance_role") == "CURRENT_INSIDER":
+            return {
+                "status": "CAUTION",
+                "is_blocked": False,
+                "label": "CURRENT INSIDER CAUTION",
+                "reason": "SEBI PIT Warning: Current employee. Strictly limited to public information.",
+                "block_ends": None
+            }
+
+        # 4. Former employee or independent channel partner -> CLEAR
+        return {
+            "status": "CLEAR",
+            "is_blocked": False,
+            "label": "SEBI PIT COMPLIANT",
+            "reason": "Permissible channel check: Historical operational knowledge and industry trends only.",
+            "block_ends": None
+        }
+
     def get_network_feed(self, tenant_id: str = DEFAULT_TENANT_ID) -> List[Dict[str, Any]]:
         """
         Returns tenant-isolated contacts prioritized for the investor:
@@ -167,12 +220,18 @@ class NetworkEngine:
                 is_stale = True
 
             comp_ticker = (r["current_company_ticker"] or "").upper().strip()
-            # SEBI MNPI blackout / restricted window (Report Item 109)
-            is_restricted = False
-            compliance_reason = None
-            if comp_ticker in ["DIXON.NS", "DIXON"]:
-                is_restricted = True
-                compliance_reason = "Restricted List: MNPI Embargo until 18 Nov"
+            contact_dict = dict(r)
+            comp_eval = NetworkEngine.compliance_status(contact_dict, comp_ticker)
+
+            WHY_LINES = {
+                "net-01": "IIT Kanpur 2004 classmate with incoming COO Vikram Seth. Warm connection to reference-check operational execution track record at Dixon/Foxconn.",
+                "net-02": "Ex-Dixon operations (2018–21), now sourcing at Xiaomi (key Dixon client). Best placed to cross-check mobile order run-rate.",
+                "net-03": "VP Commercial Vehicle Operations at Tata Motors CV Division. Best placed to evaluate domestic CV fleet replacement trends and infrastructure tonnage.",
+                "net-04": "Ex-Technical Head at Atul Ltd & chemical consultant. Best placed to evaluate Deepak Nitrite's chemical plant cost structures and margin sensitivity.",
+                "net-05": "Former Head of Merchandising at Zudio (7 yrs at Trent). Best placed to evaluate store expansion velocity and private-label inventory turnover.",
+                "net-peer-01": "VP Component Sourcing at Holitech India (major display module supplier to Dixon). Direct channel check on display assembly order schedules."
+            }
+            why_line = WHY_LINES.get(r["id"]) or r["notes"] or r["recent_development_summary"] or ""
 
             contacts.append({
                 "id": r["id"],
@@ -189,11 +248,16 @@ class NetworkEngine:
                 "relevance_score": r["relevance_score"],
                 "recent_development_summary": r["recent_development_summary"],
                 "notes": r["notes"],
+                "why_line": why_line,
                 "last_verified": r["last_verified"],
                 "last_contacted_date": r["last_contacted_date"] if "last_contacted_date" in r.keys() else None,
                 "is_stale": is_stale,
-                "compliance_restricted": is_restricted,
-                "compliance_reason": compliance_reason
+                "compliance": comp_eval,
+                "compliance_restricted": comp_eval["is_blocked"],
+                "compliance_reason": comp_eval["reason"],
+                "compliance_status": comp_eval["status"],
+                "compliance_label": comp_eval["label"],
+                "compliance_block_ends": comp_eval["block_ends"]
             })
         return contacts
 
@@ -252,6 +316,14 @@ class NetworkEngine:
         ticker_base = ticker_clean.split(".")[0].lower()
 
         for c in feed:
+            comp_eval = NetworkEngine.compliance_status(c, ticker_clean, restricted_list)
+            c["compliance"] = comp_eval
+            c["compliance_restricted"] = comp_eval["is_blocked"]
+            c["compliance_reason"] = comp_eval["reason"]
+            c["compliance_status"] = comp_eval["status"]
+            c["compliance_label"] = comp_eval["label"]
+            c["compliance_block_ends"] = comp_eval["block_ends"]
+
             is_direct = False
             curr_comp = (c["current_company"] or "").lower()
             is_current_employee = (c["current_company_ticker"] == ticker_clean) or (ticker_base in curr_comp)
@@ -295,25 +367,12 @@ class NetworkEngine:
                     if c not in competitor_contacts:
                         competitor_contacts.append(c)
 
-        # Function-specific question formulation (N-05)
-        if topic_function == "finance_margin":
-            suggested_questions = [
-                f"How has {comp_name}'s component pass-through pricing model impacted gross dollar profit per unit?",
-                "What is the working capital cycle reality on the factory floor vs reported balance sheet numbers?",
-                "Are vendor payables stretching, or are customer advances supporting liquidity?"
-            ]
-        elif topic_function == "supply_chain":
-            suggested_questions = [
-                f"Are there component bottlenecks or lead-time delays affecting {comp_name}'s primary product lines?",
-                "What is the localization percentage for key components (display, semiconductor, precision mechanics)?",
-                "How are shipping freight rates and port turnaround times impacting quarterly delivery schedules?"
-            ]
-        else:
-            suggested_questions = [
-                f"What is the actual capacity utilization and yield rate for {comp_name} vs guided numbers?",
-                "How sustainable are reported operating margins under domestic raw material pricing pressure?",
-                "Are you seeing customer order deferrals or distributor inventory buildup in the channel?"
-            ]
+        # Sector-level diligence questions (SEBI PIT Compliant: No MNPI / capacity utilization questions)
+        suggested_questions = [
+            f"What are current component lead times across the broader {sector} sector?",
+            f"How is festive retail sell-through pacing across tier-2 and tier-3 consumer markets?",
+            f"Are upstream semiconductor and display module shipping turnaround times expanding or easing across the industry?"
+        ]
 
         return {
             "ticker": ticker_clean,

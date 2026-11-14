@@ -122,7 +122,7 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
 
   const quickPrompts = [
     { label: '👥 Who knows Dixon order flow?', q: 'Who knows about Dixon order flow?' },
-    { label: '📊 Trent promised vs delivered', q: 'Trent promised vs delivered on Zudio' },
+    { label: '📊 Dixon promised vs delivered', q: 'Dixon promised vs delivered' },
     { label: '👥 Who do I know at Kaynes?', q: 'Who do I know at Kaynes?' },
     { label: '📋 Dixon Q2 results', q: 'What were Dixon Q2 results?' },
     { label: '⚡ CDSL volume anomaly', q: 'What triggered CDSL volume surge?' },
@@ -310,7 +310,9 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
                                     {card.data.name}
                                   </h4>
                                   <span className="text-[10px] text-purple-700 dark:text-purple-300 font-medium px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/40">
-                                    {card.data.current_title || 'Executive'} · {card.data.current_company || 'Firm'}
+                                    {card.data.current_title && card.data.current_company && card.data.current_title.toLowerCase().includes(card.data.current_company.toLowerCase())
+                                      ? card.data.current_title
+                                      : `${card.data.current_title || 'Executive'} · ${card.data.current_company || 'Firm'}`}
                                   </span>
                                 </div>
                                 <div className="text-[10px] text-slate-400 font-mono mt-0.5">
@@ -325,9 +327,11 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
                             </div>
 
                             {/* Operational Why Line */}
-                            <p className="text-[11px] text-purple-900 dark:text-purple-200 bg-purple-100/60 dark:bg-purple-950/40 p-2 rounded-lg border border-purple-200/50 dark:border-purple-800/30 mb-2.5 leading-relaxed font-medium">
-                              "{card.data.why_line || card.data.relevance_rationale}"
-                            </p>
+                            {Boolean(card.data.why_line || card.data.notes || card.data.recent_development_summary) && (
+                              <p className="text-[11px] text-purple-900 dark:text-purple-200 bg-purple-100/60 dark:bg-purple-950/40 p-2 rounded-lg border border-purple-200/50 dark:border-purple-800/30 mb-2.5 leading-relaxed font-medium">
+                                "{card.data.why_line || card.data.notes || card.data.recent_development_summary}"
+                              </p>
+                            )}
 
                             {/* Compliance Check / Trigger */}
                             {card.data.compliance_restricted ? (
@@ -372,43 +376,38 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
                               </span>
                             </div>
 
-                            <div className="space-y-2 mb-3">
-                              {card.data.guidance_items?.map((item: any, gIdx: number) => (
-                                <div
-                                  key={gIdx}
-                                  className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs"
-                                >
-                                  <div>
-                                    <div className="font-semibold text-slate-800 dark:text-slate-200">
-                                      {item.metric_name} ({item.quarter})
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 font-mono">
-                                      Promised: {item.promised_guidance} → Delivered: {item.delivered_actual}
-                                    </div>
-                                  </div>
-                                  <span
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
-                                      item.status === 'BEAT'
-                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                        : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                    }`}
+                            {(!card.data.guidance_items || card.data.guidance_items.length === 0) ? (
+                              <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                No guidance extracted yet
+                              </div>
+                            ) : (
+                              <div className="space-y-2 mb-1">
+                                {card.data.guidance_items.map((item: any, gIdx: number) => (
+                                  <div
+                                    key={gIdx}
+                                    className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs"
                                   >
-                                    {item.status === 'BEAT' ? '✓ BEAT' : '▲ MISSED'}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-
-                            <button
-                              onClick={() => {
-                                onNavigateTab('deepdive', card.data.ticker);
-                                handleClose();
-                              }}
-                              className="w-full min-h-[44px] py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95"
-                            >
-                              <span>Open {card.data.ticker} DeepDive</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </button>
+                                    <div>
+                                      <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                        {item.metric_name} ({item.quarter})
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 font-mono">
+                                        Promised: {item.promised_guidance} → Delivered: {item.delivered_actual}
+                                      </div>
+                                    </div>
+                                    <span
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
+                                        item.status === 'BEAT'
+                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                      }`}
+                                    >
+                                      {item.status === 'BEAT' ? '✓ BEAT' : '▲ MISSED'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
 
