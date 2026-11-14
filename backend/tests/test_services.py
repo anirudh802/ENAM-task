@@ -10,14 +10,15 @@ def setup_db():
     seed_database()
 
 def test_filing_classification():
-    # 1. Test results category
+    # 1. Test results category (HIGH by default, Item 6)
     res = FilingsEngine.classify_announcement(
         "Financial Results for Quarter Ended Sept 30",
         "The Board approved unaudited quarterly results."
     )
     assert res["category"] in ["results", "financial_results"]
     assert res["is_material"] is True
-    assert res["materiality_score"] == 10
+    assert res["materiality_score"] == 8
+    assert res["severity"] == "HIGH"
 
     # 2. Test management change
     res = FilingsEngine.classify_announcement(
@@ -44,6 +45,11 @@ def test_windowed_digest():
     # Routine filings (ESOPs, compliance certificates, low materiality) must be collapsed
     for rf in digest["routine_filings"]:
         assert rf["materiality_score"] < 8
+
+def test_seeded_feed_shows_at_most_two_critical_items():
+    digest = FilingsEngine.get_windowed_digest(hours=24)
+    critical_items = [f for f in digest["material_filings"] if f["materiality_score"] >= 9]
+    assert len(critical_items) <= 2
 
 def test_anomaly_ranking_and_top_pinned():
     anomalies = AnomalyDetector.get_ranked_anomalies()

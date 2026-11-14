@@ -85,17 +85,24 @@ class FilingsEngine:
         """
         combined = f"{title} {description}".lower()
 
-        # 1. Financial Results / Board Meeting
+        # 1. Auditor flags & Qualifications (CRITICAL P-03)
+        if any(w in combined for w in ["auditor resignation", "auditor qualification", "statutory auditor flag", "adverse opinion", "disclaimer of opinion", "forensic audit"]):
+            return {"category": "governance_auditor", "is_material": True, "materiality_score": 10, "severity": "CRITICAL"}
+
+        # 2. Financial Results / Board Meeting (HIGH by default, not Critical)
         if "board meeting" in combined and ("results" in combined or "financial" in combined):
             return {"category": "financial_results", "is_material": False, "materiality_score": 6, "severity": "MEDIUM"}
         if any(w in combined for w in ["financial results", "un-audited results", "audited results", "quarterly results", "half year results"]):
-            score = 10 if "results" in title.lower() else 7
-            return {"category": "financial_results", "is_material": score >= 8, "materiality_score": score, "severity": "CRITICAL" if score >= 9 else "HIGH"}
+            score = 8 if "results" in title.lower() else 7
+            return {"category": "financial_results", "is_material": score >= 8, "materiality_score": score, "severity": "HIGH"}
 
-        # 2. Management Change (Role-Aware P-03)
+        # 3. Management Change (Role-Aware: CXO exits CRITICAL, appointments HIGH)
         if any(w in combined for w in ["resignation of", "appointment of", "stepping down", "superannuation", "cessation"]):
             role_eval = FilingsEngine.classify_management_role(combined)
             score = role_eval["materiality_score"]
+            is_exit = any(w in combined for w in ["resignation", "stepping down", "cessation", "superannuation", "exit"])
+            if not is_exit and role_eval["role_title"] in ["COO/President", "Senior Management"]:
+                score = 8
             return {
                 "category": "management_change",
                 "is_material": score >= 8,
@@ -104,24 +111,23 @@ class FilingsEngine:
                 "severity": "CRITICAL" if score >= 9 else "HIGH"
             }
 
-        # 3. Mergers & Acquisitions
+        # 4. Mergers & Acquisitions (Large M&A -> CRITICAL)
         if any(w in combined for w in ["acquisition", "merger", "demerger", "joint venture", "jv with", "slump sale", "stake sale", "divestment"]):
             return {"category": "mergers_acquisitions", "is_material": True, "materiality_score": 9, "severity": "CRITICAL"}
 
-        # 4. Capex & Capacity Expansion
+        # 5. Capex & Capacity Expansion
         if any(w in combined for w in ["capex", "capacity expansion", "commercial production", "new manufacturing facility", "greenfield", "brownfield", "groundbreaking"]):
             return {"category": "capex_expansion", "is_material": True, "materiality_score": 8, "severity": "HIGH"}
 
-        # 5. Litigation & Regulatory Actions
+        # 6. Litigation & Regulatory Actions
         if any(w in combined for w in ["tax demand", "penalty", "show cause notice", "nclt", "cbi", "ed search", "sebi order", "gst investigation", "litigation"]):
             return {"category": "litigation_regulatory", "is_material": True, "materiality_score": 8, "severity": "HIGH"}
 
-        # 6. Fund Raise
-        if any(w in combined for w in ["rights issue", "qip", "preferential allotment", "commercial paper", "ncd", "debentures", "qualified institutional placement"]):
-            return {"category": "fund_raise", "is_material": False, "materiality_score": 6, "severity": "MEDIUM"}
-
-        # 7. Credit Rating
-        if any(w in combined for w in ["crisil", "icra", "care ratings", "india ratings", "credit rating upgrade", "credit rating downgrade", "reaffirmation"]):
+        # 7. Credit Rating (Rating downgrades CRITICAL, else MEDIUM)
+        if any(w in combined for w in ["crisil", "icra", "care ratings", "india ratings", "credit rating"]):
+            is_downgrade = any(w in combined for w in ["downgrade", "downgraded", "negative outlook", "watch with negative"])
+            if is_downgrade:
+                return {"category": "credit_rating", "is_material": True, "materiality_score": 9, "severity": "CRITICAL"}
             return {"category": "credit_rating", "is_material": False, "materiality_score": 5, "severity": "MEDIUM"}
 
         # 8. Dividend

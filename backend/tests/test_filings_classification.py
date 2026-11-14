@@ -41,13 +41,32 @@ def test_role_aware_kmp_classification():
     assert res_cs["role_details"]["role_tier"] == "GOVERNANCE_TIER_2"
 
 def test_results_and_regulatory_classification():
-    # Headline financial results
+    # Headline financial results are HIGH by default (Score 8, Item 6)
     res = FilingsEngine.classify_announcement(
         "Financial Results for Quarter Ended September 30, 2026",
         "Consolidated revenue up 120% YoY"
     )
     assert res["category"] == "financial_results"
-    assert res["materiality_score"] == 10
+    assert res["materiality_score"] == 8
+    assert res["severity"] == "HIGH"
+
+    # Auditor flag (CRITICAL)
+    res_auditor = FilingsEngine.classify_announcement(
+        "Resignation of Statutory Auditor M/s Walker Chandiok & Co LLP",
+        "Auditor resignation with disclaimer of opinion on internal financial controls."
+    )
+    assert res_auditor["category"] == "governance_auditor"
+    assert res_auditor["materiality_score"] == 10
+    assert res_auditor["severity"] == "CRITICAL"
+
+    # Credit rating downgrade (CRITICAL)
+    res_downgrade = FilingsEngine.classify_announcement(
+        "CRISIL Credit Rating Downgrade to AA- with Negative Outlook",
+        "CRISIL has downgraded the long-term bank facilities rating to AA- from AA+."
+    )
+    assert res_downgrade["category"] == "credit_rating"
+    assert res_downgrade["materiality_score"] == 9
+    assert res_downgrade["severity"] == "CRITICAL"
 
     # Board meeting intimation to consider results (Score 6)
     res_int = FilingsEngine.classify_announcement(
