@@ -42,7 +42,18 @@ COMPANIES_SEED = [
     {"isin": "INE758T01015", "ticker": "ZOMATO.NS", "name": "Zomato Ltd (Eternal)", "sector": "Internet / Quick Commerce", "market_cap_tier": "Large Cap", "market_cap_cr": 230000.0, "screener_slug": "zomato", "description": "Market leader in food delivery and quick commerce (Blinkit) expanding into 'going-out' entertainment."},
     {"isin": "INE361B01024", "ticker": "DIVISLAB.NS", "name": "Divi's Laboratories Ltd", "sector": "Active Pharmaceutical Ingredients", "market_cap_tier": "Large Cap", "market_cap_cr": 155000.0, "screener_slug": "divis-laboratories", "description": "World's top supplier of generic APIs (Naproxen, Dextromethorphan) and custom synthesis for global pharma."},
     {"isin": "INE066F01012", "ticker": "HAL.NS", "name": "Hindustan Aeronautics Ltd", "sector": "Aerospace & Defense", "market_cap_tier": "Large Cap", "market_cap_cr": 295000.0, "screener_slug": "hindustan-aeronautics", "description": "State-backed monopoly manufacturer of fighter aircraft (Tejas), helicopters (Prachand), and avionics."},
-    {"isin": "INE192R01011", "ticker": "DMART.NS", "name": "Avenue Supermarts Ltd (DMart)", "sector": "Value Retail", "market_cap_tier": "Large Cap", "market_cap_cr": 270000.0, "screener_slug": "avenue-supermarts", "description": "Lowest-cost everyday supermarket operator owning its store real estate with exceptional inventory turns."}
+    {"isin": "INE192R01011", "ticker": "DMART.NS", "name": "Avenue Supermarts Ltd (DMart)", "sector": "Value Retail", "market_cap_tier": "Large Cap", "market_cap_cr": 270000.0, "screener_slug": "avenue-supermarts", "description": "Lowest-cost everyday supermarket operator owning its store real estate with exceptional inventory turns."},
+    # Expanded Real Institutional Universe (Nifty Stalwarts & High-Growth Capital Goods)
+    {"isin": "INE467B01029", "ticker": "TCS.NS", "name": "Tata Consultancy Services Ltd", "sector": "Information Technology", "market_cap_tier": "Large Cap", "market_cap_cr": 1520000.0, "screener_slug": "tcs", "description": "India's largest IT services enterprise operating global scale in cloud transformation, BFSI modernization, and enterprise AI."},
+    {"isin": "INE397D01024", "ticker": "BHARTIARTL.NS", "name": "Bharti Airtel Ltd", "sector": "Telecom & Infrastructure", "market_cap_tier": "Large Cap", "market_cap_cr": 985000.0, "screener_slug": "bharti-airtel", "description": "Leading digital communications provider across India and 14 African nations with compounding ARPU growth and 5G enterprise infrastructure."},
+    {"isin": "INE090A01021", "ticker": "ICICIBANK.NS", "name": "ICICI Bank Ltd", "sector": "Banking", "market_cap_tier": "Large Cap", "market_cap_cr": 915000.0, "screener_slug": "icici-bank", "description": "Tier-1 commercial bank delivering industry-leading return on assets (>2.3% ROA) through disciplined underwriting and retail digital franchise."},
+    {"isin": "INE154A01025", "ticker": "ITC.NS", "name": "ITC Ltd", "sector": "Consumer Goods & FMCG", "market_cap_tier": "Large Cap", "market_cap_cr": 610000.0, "screener_slug": "itc", "description": "Diversified consumer conglomerate with premier market leadership in branded foods, cigarettes, agri-commodities, and paperboards."},
+    {"isin": "INE237A01028", "ticker": "KOTAKBANK.NS", "name": "Kotak Mahindra Bank Ltd", "sector": "Banking", "market_cap_tier": "Large Cap", "market_cap_cr": 365000.0, "screener_slug": "kotak-mahindra-bank", "description": "Premier private commercial bank and integrated financial services group renowned for conservative risk management and wealth franchise."},
+    {"isin": "INE296A01024", "ticker": "BAJFINANCE.NS", "name": "Bajaj Finance Ltd", "sector": "Banking", "market_cap_tier": "Large Cap", "market_cap_cr": 445000.0, "screener_slug": "bajaj-finance", "description": "India's largest consumer and SME non-banking lender with dominant nationwide POS presence and omnichannel customer acquisition."},
+    {"isin": "INE030A01027", "ticker": "HINDUNILVR.NS", "name": "Hindustan Unilever Ltd", "sector": "Consumer Goods & FMCG", "market_cap_tier": "Large Cap", "market_cap_cr": 585000.0, "screener_slug": "hindustan-unilever", "description": "Market leader in domestic fast-moving consumer goods reaching over 90% of Indian households across personal care, beauty, and foods."},
+    {"isin": "INE021A01026", "ticker": "ASIANPAINT.NS", "name": "Asian Paints Ltd", "sector": "Consumer Discretionary", "market_cap_tier": "Large Cap", "market_cap_cr": 265000.0, "screener_slug": "asian-paints", "description": "India's premier decorative coatings and paints company with dominant 50%+ market share and deeply entrenched dealer network."},
+    {"isin": "INE238A01034", "ticker": "AXISBANK.NS", "name": "Axis Bank Ltd", "sector": "Banking", "market_cap_tier": "Large Cap", "market_cap_cr": 355000.0, "screener_slug": "axis-bank", "description": "Full-service private sector bank with deep corporate credit relationships and high-growth retail cards franchise post-Citi integration."},
+    {"isin": "INE249Z01012", "ticker": "MAZDOCK.NS", "name": "Mazagon Dock Shipbuilders Ltd", "sector": "Defense Capital Goods", "market_cap_tier": "Mid Cap", "market_cap_cr": 95000.0, "screener_slug": "mazagon-dock-shipbuilders", "description": "Premier defense public sector shipyard constructing stealth destroyers, submarines, and specialized naval offshore vessels for the Indian Navy."}
 ]
 
 # Tenant Holdings (F-04: Confidential Portfolio Scoping for ENAM)
@@ -71,6 +82,16 @@ BASE_TICKER_PROFILES = {
     "PIIND.NS": {"target_sigma": 1.55, "target_mean": 0.06, "close": 4350.0, "vol": 210000, "sma": 200000.0, "ret": 1.6, "mult": 1.05},
     "SYNGENE.NS": {"target_sigma": 1.68, "target_mean": -0.01, "close": 820.0, "vol": 350000, "sma": 340000.0, "ret": -0.8, "mult": 1.03},
     "CLEAN.NS": {"target_sigma": 1.85, "target_mean": 0.01, "close": 1410.0, "vol": 120000, "sma": 115000.0, "ret": 0.1, "mult": 1.04},
+    "TCS.NS": {"target_sigma": 1.15, "target_mean": 0.05, "close": 4150.0, "vol": 1850000, "sma": 1800000.0, "ret": 0.8, "mult": 1.03},
+    "BHARTIARTL.NS": {"target_sigma": 1.40, "target_mean": 0.10, "close": 1685.0, "vol": 5200000, "sma": 5100000.0, "ret": 1.2, "mult": 1.02},
+    "ICICIBANK.NS": {"target_sigma": 1.25, "target_mean": 0.06, "close": 1310.0, "vol": 9800000, "sma": 9600000.0, "ret": 0.6, "mult": 1.02},
+    "ITC.NS": {"target_sigma": 1.05, "target_mean": 0.03, "close": 485.0, "vol": 11200000, "sma": 10900000.0, "ret": 0.3, "mult": 1.03},
+    "KOTAKBANK.NS": {"target_sigma": 1.20, "target_mean": 0.04, "close": 1830.0, "vol": 3400000, "sma": 3350000.0, "ret": 0.4, "mult": 1.01},
+    "BAJFINANCE.NS": {"target_sigma": 1.85, "target_mean": 0.08, "close": 7180.0, "vol": 1150000, "sma": 1120000.0, "ret": 1.1, "mult": 1.03},
+    "HINDUNILVR.NS": {"target_sigma": 1.10, "target_mean": 0.02, "close": 2480.0, "vol": 1650000, "sma": 1600000.0, "ret": -0.2, "mult": 1.03},
+    "ASIANPAINT.NS": {"target_sigma": 1.35, "target_mean": 0.04, "close": 2760.0, "vol": 1200000, "sma": 1180000.0, "ret": 0.5, "mult": 1.02},
+    "AXISBANK.NS": {"target_sigma": 1.45, "target_mean": 0.05, "close": 1150.0, "vol": 7800000, "sma": 7700000.0, "ret": 0.7, "mult": 1.01},
+    "MAZDOCK.NS": {"target_sigma": 2.60, "target_mean": 0.20, "close": 4680.0, "vol": 1450000, "sma": 1380000.0, "ret": 3.4, "mult": 1.05},
 }
 
 def generate_market_eod_data():
@@ -78,7 +99,7 @@ def generate_market_eod_data():
     eod_records = []
     base_date = datetime(2026, 11, 12)
 
-    for comp in COMPANIES_SEED[:18]:
+    for comp in COMPANIES_SEED:
         isin = comp["isin"]
         ticker = comp["ticker"]
         profile = BASE_TICKER_PROFILES.get(ticker, {"target_sigma": 1.70, "target_mean": 0.05, "close": 2000.0, "vol": 500000, "sma": 480000.0, "ret": 0.5, "mult": 1.04})
@@ -1037,6 +1058,16 @@ def seed_database():
             "INE040A01034": "500180",  # HDFC Bank
             "INE288B01029": "506401",  # Deepak Nitrite
             "INE009A01021": "500209",  # Infosys
+            "INE467B01029": "532540",  # TCS
+            "INE397D01024": "532454",  # Bharti Airtel
+            "INE090A01021": "532174",  # ICICI Bank
+            "INE154A01025": "500875",  # ITC
+            "INE237A01028": "500247",  # Kotak Bank
+            "INE296A01024": "500034",  # Bajaj Finance
+            "INE030A01027": "500696",  # HUL
+            "INE021A01026": "500820",  # Asian Paints
+            "INE238A01034": "532215",  # Axis Bank
+            "INE249Z01012": "543237",  # Mazagon Dock
         }
         for c in COMPANIES_SEED:
             scrip = BSE_SCRIP_CODES.get(c["isin"], "500000")
