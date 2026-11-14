@@ -11,10 +11,12 @@ def get_db_path() -> str:
 def get_db_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
-    # Enable WAL mode for high concurrency between background writer and API readers
+    # Enable WAL mode and production memory caching for single-node institutional desk
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
     conn.execute("PRAGMA foreign_keys=ON;")
+    conn.execute("PRAGMA busy_timeout=5000;")
+    conn.execute("PRAGMA cache_size=-64000;")  # 64MB RAM page cache
     return conn
 
 @contextmanager
@@ -256,6 +258,7 @@ def init_db():
             recent_development_summary TEXT,
             notes TEXT,
             last_verified TEXT,
+            last_contacted_date TEXT,
             FOREIGN KEY (tenant_id) REFERENCES tenants(id)
         );
         """)
@@ -308,11 +311,66 @@ def init_db():
         );
         """)
 
+        # 18. Content-Addressed LLM Cache (Zero-Cost Re-Inference)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS llm_cache (
+            doc_sha256 TEXT NOT NULL,
+            prompt_ver TEXT NOT NULL,
+            output_json TEXT NOT NULL,
+            model TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (doc_sha256, prompt_ver)
+        );
+        """)
+
+        # 19. Transactional Notification Outbox (Non-blocking alert delivery)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS notification_outbox (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            anomaly_id TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            attempts INTEGER DEFAULT 0,
+            next_retry_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            sent_at TEXT,
+            error_message TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (anomaly_id) REFERENCES detected_anomalies(id)
+        );
+        """)
+
+        # 20. Ingestion State & Subsystem Observability
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ingestion_state (
+            key TEXT PRIMARY KEY,
+            val TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        """)
+
+        # Column Migrations (Safe Idempotent Alter)
+        try:
+            cursor.execute("ALTER TABLE companies ADD COLUMN bse_scrip_code TEXT;")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE market_eod ADD COLUMN deliv_per REAL DEFAULT 0.0;")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE network_contacts ADD COLUMN last_contacted_date TEXT;")
+        except Exception:
+            pass
+
         # Indices for sub-millisecond query performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_companies_ticker ON companies(ticker);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_companies_scrip ON companies(bse_scrip_code);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_holdings_tenant ON tenant_holdings(tenant_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcements_isin ON announcements(isin);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcements_time ON announcements(filing_time DESC);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_anomalies_time ON detected_anomalies(created_at DESC);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_market_eod_lookup ON market_eod(isin, trade_date DESC);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_network_tenant ON network_contacts(tenant_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_outbox_pending ON notification_outbox(status, next_retry_at);")

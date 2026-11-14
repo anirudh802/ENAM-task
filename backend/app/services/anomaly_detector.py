@@ -381,6 +381,13 @@ class AnomalyDetector:
                             ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
                             """, (user_id, anomaly_id))
 
+                        # Enqueue into transactional outbox
+                        now_str = datetime.now().isoformat()
+                        cursor.execute("""
+                        INSERT INTO notification_outbox (id, user_id, anomaly_id, payload, status, attempts, next_retry_at, created_at)
+                        VALUES (?, ?, ?, ?, 'PENDING', 0, ?, ?);
+                        """, (f"outbox-{uuid.uuid4().hex[:12]}", user_id, anomaly_id, json.dumps({"headline": headline, "ticker": ticker, "severity": severity}), now_str, now_str))
+
                         new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 
                 # --- Single-Factor Volume Surge Evaluation ---
@@ -425,6 +432,13 @@ class AnomalyDetector:
                             VALUES (?, ?, 1, 0)
                             ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
                             """, (user_id, anomaly_id))
+
+                        # Enqueue into transactional outbox
+                        now_str = datetime.now().isoformat()
+                        cursor.execute("""
+                        INSERT INTO notification_outbox (id, user_id, anomaly_id, payload, status, attempts, next_retry_at, created_at)
+                        VALUES (?, ?, ?, ?, 'PENDING', 0, ?, ?);
+                        """, (f"outbox-{uuid.uuid4().hex[:12]}", user_id, anomaly_id, json.dumps({"headline": headline, "ticker": ticker, "severity": severity}), now_str, now_str))
 
                         new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 
@@ -471,6 +485,13 @@ class AnomalyDetector:
                             VALUES (?, ?, 1, 0)
                             ON CONFLICT(user_id, anomaly_id) DO UPDATE SET is_pinned = 1;
                             """, (user_id, anomaly_id))
+
+                        # Enqueue into transactional outbox
+                        now_str = datetime.now().isoformat()
+                        cursor.execute("""
+                        INSERT INTO notification_outbox (id, user_id, anomaly_id, payload, status, attempts, next_retry_at, created_at)
+                        VALUES (?, ?, ?, ?, 'PENDING', 0, ?, ?);
+                        """, (f"outbox-{uuid.uuid4().hex[:12]}", user_id, anomaly_id, json.dumps({"headline": headline, "ticker": ticker, "severity": severity}), now_str, now_str))
 
                         new_anomalies.append({"id": anomaly_id, "headline": headline, "severity": severity, "ticker": ticker})
 

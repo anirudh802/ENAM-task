@@ -144,7 +144,7 @@ class NetworkEngine:
             cursor.execute("""
             SELECT id, tenant_id, name, current_title, current_company, current_company_ticker,
                    relationship_strength, is_starred, past_companies, education, themes,
-                   relevance_score, recent_development_summary, notes, last_verified
+                   relevance_score, recent_development_summary, notes, last_verified, last_contacted_date
             FROM network_contacts
             WHERE tenant_id = ?
             ORDER BY is_starred DESC, relevance_score DESC;
@@ -166,6 +166,14 @@ class NetworkEngine:
             else:
                 is_stale = True
 
+            comp_ticker = (r["current_company_ticker"] or "").upper().strip()
+            # SEBI MNPI blackout / restricted window (Report Item 109)
+            is_restricted = False
+            compliance_reason = None
+            if comp_ticker in ["DIXON.NS", "DIXON"]:
+                is_restricted = True
+                compliance_reason = "Restricted List: MNPI Embargo until 18 Nov"
+
             contacts.append({
                 "id": r["id"],
                 "tenant_id": r["tenant_id"],
@@ -182,7 +190,10 @@ class NetworkEngine:
                 "recent_development_summary": r["recent_development_summary"],
                 "notes": r["notes"],
                 "last_verified": r["last_verified"],
-                "is_stale": is_stale
+                "last_contacted_date": r["last_contacted_date"] if "last_contacted_date" in r.keys() else None,
+                "is_stale": is_stale,
+                "compliance_restricted": is_restricted,
+                "compliance_reason": compliance_reason
             })
         return contacts
 

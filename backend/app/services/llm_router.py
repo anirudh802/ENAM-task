@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, Any, Optional
 from app.core.config import settings
+from app.services.llm_cache_service import llm_cache
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,17 @@ class LLMRouter:
 
     def synthesize_research(self, ticker: str, company_name: str, primary_context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Synthesizes research using Gemini 2.5 Flash if available.
+        Synthesizes research using Layer 1 Content-Addressed LLM Cache or Gemini 2.5 Flash.
         Returns parsed JSON or None if unavailable/failed.
         """
+        # 1. Check content-addressed cache (zero-cost re-inference)
+        context_str = json.dumps(primary_context, sort_keys=True)
+        doc_sha256 = llm_cache.compute_sha256(context_str)
+        cached_result = llm_cache.get(doc_sha256)
+        if cached_result:
+            logger.info(f"LLM Cache Hit for {ticker} (doc_sha256: {doc_sha256[:10]}). Zero-cost response returned.")
+            return cached_result
+
         if not self.client:
             return None
 
@@ -55,16 +64,22 @@ Generate a structured financial synthesis in strict JSON matching these keys:
   "bear_case": ["bullet 1 with numbers", "bullet 2 with numbers"]
 }}
 """
-        try:
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config={"response_mime_type": "application/json"}
-            )
-            if response.text:
-                return json.loads(response.text)
-        except Exception as e:
-            logger.warning(f"Gemini LLM call failed, falling back to deterministic extraction: {e}")
+        models_to_try = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-2.5-flash"]
+        for model_name in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config={"response_mime_type": "application/json"}
+                )
+                if response.text:
+                    parsed = json.loads(response.text)
+                    # Store in content-addressed cache
+                    llm_cache.set(doc_sha256, parsed, model=model_name)
+                    return parsed
+            except Exception as e:
+                logger.warning(f"Gemini LLM call failed on {model_name}: {e}")
+                continue
 
         return None
 

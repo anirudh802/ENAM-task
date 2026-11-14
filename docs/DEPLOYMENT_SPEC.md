@@ -26,13 +26,15 @@
 
 ---
 
-## 3. LLM Provider, Cost & Latency Budgets
+## 3. LLM Provider, Cost & Latency Budgets (3-Tier Routing Architecture)
 
-| Task | Primary Model | Fallback | Latency Budget | Estimated Cost / Query |
-| :--- | :--- | :--- | :--- | :--- |
-| **Research Synthesis (DeepDive)** | Google Gemini 2.5 Flash | Deterministic expert template | $< 2.5$ seconds | $\approx \$0.0015$ / query |
-| **Filing Materiality Scoring** | Regex + heuristic scoring | Lightweight prompt assist | $< 100$ ms | $\$0.00$ (Local CPU) |
-| **Guidance Variance Math** | Deterministic Python Engine | N/A | $< 5$ ms | $\$0.00$ (Local CPU) |
+FINN enforces a strict **3-tier cost-optimized model routing architecture** to deliver sub-second responses, zero arithmetic hallucinations, and hedge-fund grade research at minimal compute cost:
 
-**Secrets Handling:**
-All API keys (`GEMINI_API_KEY`, VAPID keys) are loaded strictly via environment variables managed by `pydantic-settings`. Plaintext keys in Git or repository files are strictly prohibited.
+| Tier | Role / Pipeline Stage | Model / Engine | Latency Budget | Estimated Cost / Unit | Operational Guardrail |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Tier 0** | **Deterministic Local Engine** (Classification, Math, Verification) | Local Python / Regex / SQLite | $< 5$ ms | **$0.00** (Local CPU) | Zero LLM math. Handles SEBI LODR 17-category classification, corporate action split adjustments (1:5), 60-day volatility Z-scores, `MetricsCalculator` (YoY/QoQ %, bps, CFO/PAT), and `CitationVerifier` substring matching. |
+| **Tier 1** | **High-Throughput Bulk Extraction** (Guidance & Quote Parsing) | **Gemini 2.5 Flash** | $< 1.2$ s | **~$0.0004** / doc | High-throughput parsing of structured management guidance claims and verbatim quotes from dense 20+ page concall transcripts. |
+| **Tier 2** | **High-Reasoning Synthesis** (DeepDive & Thesis Synthesis) | **Gemini 2.5 Pro** | $< 2.5$ s | **~$0.0035** / query | Complex multi-quarter `Narrative vs. Numbers` divergence synthesis, capital allocation evaluation, and Bull/Bear thesis construction. **Gated by `CitationVerifier` with deterministic fallback** if ungrounded. |
+
+### Secrets & Security Handling
+All sensitive credentials (`GEMINI_API_KEY`, VAPID public/private keypairs) are managed strictly via environment variables parsed by `pydantic-settings`. Direct hardcoding of plaintext API tokens or secrets in version control is strictly prohibited by pre-commit hooks and CI security scanners.

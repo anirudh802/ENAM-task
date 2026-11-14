@@ -24,13 +24,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex items-center justify-between max-w-5xl mx-auto">
         {/* Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-700 via-sky-600 to-emerald-500 flex items-center justify-center shadow-sm">
-            <span className="text-white font-extrabold text-sm tracking-wider">F</span>
+          <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 font-mono font-bold tracking-tighter border border-slate-700/50 flex items-center justify-center shadow-sm">
+            <span className="text-sm">F</span>
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold tracking-tight text-base text-slate-900 dark:text-white">FINN</span>
-              <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">ENAM</span>
+              <span className="text-[10px] font-mono font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">ENAM</span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Investment Intelligence</p>
           </div>

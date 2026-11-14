@@ -42,12 +42,16 @@ export interface Company {
 
 export interface HeadlineMetrics {
   revenue_cr?: number;
-  ebitda_cr?: number;
-  ebitda_margin_pct?: number;
-  pbt_cr?: number;
-  pat_cr?: number;
   revenue_qoq_pct?: number;
   revenue_yoy_pct?: number;
+  ebitda_cr?: number;
+  ebitda_margin_pct?: number;
+  ebitda_qoq_pct?: number;
+  ebitda_yoy_pct?: number;
+  pbt_cr?: number;
+  pbt_qoq_pct?: number;
+  pbt_yoy_pct?: number;
+  pat_cr?: number;
   pat_qoq_pct?: number;
   pat_yoy_pct?: number;
 }
@@ -77,6 +81,7 @@ export interface Filing {
     relationship: string;
     degree_of_separation: number;
     context: string;
+    why_line?: string;
   } | null;
 }
 
@@ -182,6 +187,14 @@ export interface PullResearch {
     multi_year_trend: string;
     expanding_drivers: string[];
     compressing_risks: string[];
+    multi_year_financials?: Array<{
+      fiscal_year: string;
+      revenue_cr: number;
+      ebitda_margin_pct: number;
+      pat_cr: number;
+      cfo_cr: number;
+      cfo_to_pat: number;
+    }>;
   };
   cash_quality: {
     cfo_cr?: number | null;
@@ -213,6 +226,9 @@ export interface NetworkContact {
   relevance_score: number;
   recent_development_summary?: string | null;
   notes?: string | null;
+  last_contacted_date?: string | null;
+  compliance_restricted?: boolean;
+  compliance_reason?: string | null;
 }
 
 export interface WhoToCallResponse {
@@ -236,3 +252,28 @@ export interface SecondDegreePath {
   path_strength: number;
   recommended_intro_ask: string;
 }
+
+export type AskIntent = 'NETWORK' | 'GUIDANCE' | 'RESULTS' | 'ANOMALY' | 'SYNTHESIS' | 'EMPTY' | 'GENERAL';
+
+export interface AskAction {
+  type: 'navigate_tab';
+  tab: 'pulse' | 'radar' | 'deepdive' | 'nexus';
+  ticker?: string;
+  label: string;
+}
+
+export interface AskCard {
+  card_type: 'network_contact' | 'guidance_track_record' | 'results_disclosure' | 'radar_anomaly' | 'research_synthesis';
+  data: any;
+}
+
+export interface AskResponse {
+  query: string;
+  intent: AskIntent;
+  matched_ticker?: string | null;
+  company_name?: string | null;
+  answer_summary: string;
+  cards: AskCard[];
+  actions: AskAction[];
+}
+

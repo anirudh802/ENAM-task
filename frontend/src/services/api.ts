@@ -7,9 +7,10 @@ import {
   NetworkContact,
   WhoToCallResponse,
   SecondDegreePath,
+  AskResponse,
 } from '../types';
 
-const API_BASE = window.location.port === '5173' ? 'http://127.0.0.1:8000/api' : '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const api = {
   // Health
@@ -30,8 +31,21 @@ export const api = {
     if (category && category !== 'all') {
       url += `&category=${category}`;
     }
+    const cacheKey = `finn_digest_${hours}_${category || 'all'}`;
     const res = await fetch(url);
-    return res.json();
+    if (res.status === 304) {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {}
+      }
+    }
+    const data = await res.json();
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(data));
+    } catch {}
+    return data;
   },
 
   getPinnedAlert: async (): Promise<Anomaly | null> => {
@@ -148,6 +162,16 @@ export const api = {
   runPipeline: async (): Promise<any> => {
     const res = await fetch(`${API_BASE}/pipeline/run`, {
       method: 'POST',
+    });
+    return res.json();
+  },
+
+  // Omnipresent Ask Intelligence
+  askQuestion: async (query: string): Promise<AskResponse> => {
+    const res = await fetch(`${API_BASE}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
     });
     return res.json();
   },

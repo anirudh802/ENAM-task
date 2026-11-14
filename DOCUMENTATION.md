@@ -10,6 +10,10 @@
 
 ## Executive Summary & System Overview
 
+> **Architecture & Production Roadmap References:**  
+> - [Production Desk Engineering Roadmap](docs/PRODUCTION_DESK_ROADMAP.md) — Zero-cost desk architecture: Direct BSE/NSE ingestion, XBRL parsing, Bhavcopy delivery %, SQLite WAL hardening, outbox & SSE streaming.  
+> - [Comprehensive System Architecture Specification](docs/FINN_SYSTEM_ARCHITECTURE.md) — Exhaustive system specification detailing the backend engine, frontend PWA, 20-table SQLite WAL schema, multi-model routing, and security threat model.
+
 FINN is a mobile-first, installable Progressive Web Application (PWA) built for high-conviction public-market investors at ENAM Holdings. It resolves three core investor challenges:
 1. **Filtering Information Overload:** Surfaces high-materiality corporate announcements across a 15–20 stock portfolio, collapsing routine compliance filings and flagging price/volume anomalies.
 2. **Primary-Source Grounded Diligence:** Provides on-demand company analysis strictly derived from primary disclosures (annual reports, quarterly concall transcripts, exchange filings) featuring a **"Narrative vs. Numbers"** track record (promised guidance vs. actual delivered results).
@@ -95,25 +99,42 @@ flowchart TD
 - **Contact CSV Import & Staleness:** Ingests contact lists from CSV and flags contacts unverified for $> 180$ days.
 - **DPDP Act Controls:** Full Data Portability export and Right to Erasure deletion.
 
+### E. Phase 4: UI/UX Refinements & Omnipresent Ask Intelligence
+- **Omnipresent Ask Intelligence Bar:**
+  Docked across all screens (`Pulse`, `Radar`, `DeepDive`, `Nexus`), answering who/what questions with embedded FINN cards (e.g., "Who knows about Dixon order flow?" $\rightarrow$ Rohan Deshmukh contact card with why line and SEBI blackout lock; "Trent promised vs delivered" $\rightarrow$ 4-quarter guidance badges and DeepDive navigation).
+- **Web Speech Voice Trigger:** Native browser speech recognition (`webkitSpeechRecognition`) with active listening pulse and graceful fallback.
+- **Grouped Company Anomalies in Radar:** Merges multiple rule triggers for a single ticker (e.g. CDSL volume surge 4.2x and price breakout +8.4%) into a single card with rule chips and before/after counts on the sensitivity sliders.
+- **16-Company Mock Portfolio Strip in DeepDive:** Includes visible violet indicators for holdings with active network ties (`DIXON`, `TRENT`, `KAYNES`, `DEEPAKNTR`).
+- **Quarantined Missing Disclosures State:** Strictly halts ungrounded synthesis when a company lacks primary XBRL or concall filings (`Parse Quality < 0.60` / `Insufficient Coverage`).
+
+### F. 3-Tier Cost-Optimized Model Routing Architecture
+FINN employs a strict, cost-governed multi-model routing pipeline:
+- **Tier 0 (Zero-Cost Deterministic Local Engine, `$0.00` / `<5ms`):** Regex/keyword SEBI LODR 17-category classification, corporate-action split adjustments, 60-day volatility Z-score calculations, deterministic financial ratios (`MetricsCalculator` for YoY/QoQ %, bps, and CFO/PAT cash conversion), and substring matching via `CitationVerifier`. Completely eliminates LLM math and hallucination risks.
+- **Tier 1 (High-Throughput Bulk Extraction, `Gemini 2.5 Flash`, `~$0.0004/doc`):** High-throughput parsing of structured guidance claims, speaker names, and verbatim quotes from dense 20+ page concall transcripts.
+- **Tier 2 (High-Reasoning Synthesis, `Gemini 2.5 Pro` with Deterministic Fallback):** Multi-quarter `Narrative vs. Numbers` divergence analysis, capital allocation assessments, and Bull/Bear thesis synthesis. All outputs are strictly gated by `CitationVerifier` with automatic fallback to pre-verified primary templates.
+
 ---
 
 ## 3. Test Suite & Verification Results
 
-The automated test suite in `backend/tests/` contains **52 tests** across 12 test modules with **100% pass rate**:
+The automated test suite in `backend/tests/` contains **69 tests** across 15 test modules with a **100% pass rate**:
 
 | Test Module | Coverage & Focus | Status |
 |---|---|---|
+| `test_production_desk.py` | Direct BSE ingestion, XBRL parsing, Bhavcopy delivery %, outbox, ETag 304, hot backup | **PASSED (9/9)** |
+| `test_ask_service.py` | Phase 4: Omnipresent ask engine, who/what intent classification, FINN card routing | **PASSED (5/5)** |
 | `test_golden_claims.py` | Phase 1 Exit Gate: 100% citation faithfulness & hallucination rejection | **PASSED (3/3)** |
 | `test_tenant_isolation.py` | Phase 0 Exit Gate: Multi-tenant portfolio & graph isolation | **PASSED (2/2)** |
 | `test_nexus_intelligence.py` | Phase 3 Exit Gate: Relevance formula, SEBI MNPI, DPDP Act, CSV import | **PASSED (6/6)** |
 | `test_anomaly_hardening.py` | Phase 2: 1:5 split adjustment, 60-day Z-scores, fatigue cooldowns | **PASSED (5/5)** |
 | `test_metrics_calculator.py` | Phase 1: Crores, lakhs, bps, CFO/PAT, guidance range evaluation, BFSI | **PASSED (7/7)** |
 | `test_citation_verifier.py` | Phase 1: Verbatim quote locating, near-verbatim match, fake rejection | **PASSED (4/4)** |
+| `test_cold_ticker_research.py` | Task 3: Unseeded ticker live resolution (MARUTI, INFY, BEL), normalization, caching | **PASSED (3/3)** |
 | `test_document_pipeline.py` | Phase 1: Parse quality scores, OCR corruption detection, cold ticker coverage | **PASSED (4/4)** |
 | `test_filings_classification.py`| Phase 1: 17 SEBI LODR categories, KMP role classifier, BSE/NSE de-duplication | **PASSED (4/4)** |
 | `test_financial_units.py` | Phase 0: Indian fiscal calendar (Apr-Mar) & unit conversion helpers | **PASSED (2/2)** |
 | `test_user_alert_state.py` | Phase 0: Decoupled per-user alert dismissal & pinning | **PASSED (1/1)** |
-| `test_api.py` | REST API routes (health, companies, digest, preferences, research, network) | **PASSED (7/7)** |
+| `test_api.py` | REST API routes (health, companies, digest, preferences, research, network, ask) | **PASSED (7/7)** |
 | `test_services.py` | Integration tests across anomaly detector, filings engine, and network | **PASSED (7/7)** |
 
 ---

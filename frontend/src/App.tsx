@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Phone } from 'lucide-react';
 import { Navbar } from './components/layout/Navbar';
 import { BottomNav, TabType } from './components/layout/BottomNav';
 import { PinnedAlertCard } from './components/pulse/PinnedAlertCard';
@@ -6,6 +7,7 @@ import { WindowedDigest } from './components/pulse/WindowedDigest';
 import { RadarView } from './components/radar/RadarView';
 import { DeepDiveView } from './components/deepdive/DeepDiveView';
 import { NexusView } from './components/nexus/NexusView';
+import { AskBar } from './components/ask/AskBar';
 import { api } from './services/api';
 import { DigestResponse, Anomaly, UserPreferences } from './types';
 
@@ -41,20 +43,23 @@ export function App() {
   const loadInitialData = async () => {
     setIsRefreshing(true);
     try {
-      const [dig, pinned, anoms, prefs] = await Promise.all([
+      const [digRes, pinnedRes, anomsRes, prefsRes] = await Promise.allSettled([
         api.getDigest(selectedHours, selectedCategory),
         api.getPinnedAlert(),
         api.getAlerts(),
         api.getPreferences(),
       ]);
-      setDigest(dig);
-      if (pinned && !dismissedAlertIds.has(pinned.id)) {
-        setPinnedAlert(pinned);
-      } else {
-        setPinnedAlert(null);
+      if (digRes.status === 'fulfilled') setDigest(digRes.value);
+      if (pinnedRes.status === 'fulfilled') {
+        const pinned = pinnedRes.value;
+        if (pinned && !dismissedAlertIds.has(pinned.id)) {
+          setPinnedAlert(pinned);
+        } else {
+          setPinnedAlert(null);
+        }
       }
-      setAnomalies(anoms);
-      setPreferences(prefs);
+      if (anomsRes.status === 'fulfilled') setAnomalies(anomsRes.value);
+      if (prefsRes.status === 'fulfilled') setPreferences(prefsRes.value);
     } catch (err) {
       console.error('Failed to load FINN data:', err);
     } finally {
@@ -132,6 +137,13 @@ export function App() {
     setActiveTab('deepdive');
   };
 
+  const handleNavigateTab = (tab: TabType, ticker?: string) => {
+    if (ticker) {
+      setDeepDiveTicker(ticker);
+    }
+    setActiveTab(tab);
+  };
+
   const handleSelectNetworkForTicker = (ticker: string) => {
     setDeepDiveTicker(ticker);
     setActiveTab('nexus');
@@ -164,13 +176,14 @@ export function App() {
 
         {/* Contact Toast Banner */}
         {contactToast && (
-          <div className="bg-emerald-600 text-white text-xs font-semibold py-2 px-4 text-center animate-fade-in shadow-md">
-            📞 {contactToast}
+          <div className="bg-emerald-600 text-white text-xs font-semibold py-2 px-4 text-center animate-fade-in shadow-md flex items-center justify-center gap-1.5">
+            <Phone className="w-3.5 h-3.5 stroke-[1.75]" />
+            <span>{contactToast}</span>
           </div>
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 p-3.5 pb-28 overflow-y-auto">
+        <main className="flex-1 p-3.5 pb-40 overflow-y-auto">
           {activeTab === 'pulse' && (
             <div>
               {/* Pinned Dismissible Critical Alert Card */}
@@ -218,6 +231,12 @@ export function App() {
             />
           )}
         </main>
+
+        {/* Omnipresent Ask Intelligence Bar */}
+        <AskBar
+          onNavigateTab={handleNavigateTab}
+          onCallContact={handleCallContact}
+        />
 
         {/* Fixed Bottom Navigation Bar */}
         <BottomNav

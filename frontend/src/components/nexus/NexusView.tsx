@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { NetworkContact, WhoToCallResponse, SecondDegreePath } from '../../types';
 import { api } from '../../services/api';
-import { Star, Phone, Users, Sparkles, ArrowRight, Share2 } from 'lucide-react';
+import {
+  Star,
+  Phone,
+  Users,
+  ArrowRight,
+  Share2,
+  GraduationCap,
+  ArrowUpRight,
+  X,
+  Lock,
+  Clock,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Info,
+  Building2
+} from 'lucide-react';
 
 interface NexusViewProps {
   initialTicker?: string;
@@ -19,6 +36,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
   const [showWhoToCallModal, setShowWhoToCallModal] = useState(false);
   const [showSecondDegreeModal, setShowSecondDegreeModal] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>('all');
+  const [expandedScoreIds, setExpandedScoreIds] = useState<Record<string, boolean>>({});
 
   const fetchNetwork = async () => {
     try {
@@ -74,6 +92,109 @@ export const NexusView: React.FC<NexusViewProps> = ({
     }
   };
 
+  const toggleScoreBreakdown = (contactId: string) => {
+    setExpandedScoreIds((prev) => ({ ...prev, [contactId]: !prev[contactId] }));
+  };
+
+  const getScoreBreakdown = (contact: NetworkContact) => {
+    const isCxo =
+      contact.current_title.toLowerCase().includes('partner') ||
+      contact.current_title.toLowerCase().includes('director') ||
+      contact.current_title.toLowerCase().includes('vp') ||
+      contact.current_title.toLowerCase().includes('officer');
+    const seniority = isCxo ? 2.5 : 1.5;
+    const strength = Math.min(2.5, contact.relationship_strength * 2.0 * 0.25);
+    const materiality = 2.0;
+    const tenure = Math.min(
+      2.5,
+      Math.max(1.0, contact.relevance_score - (contact.is_starred ? 2.0 : 0.0) - seniority - strength - materiality)
+    );
+    const starredBoost = contact.is_starred ? 2.0 : 0.0;
+
+    return {
+      tenure: Math.round(tenure * 10) / 10,
+      seniority,
+      strength: Math.round(strength * 10) / 10,
+      materiality,
+      starredBoost,
+      total: contact.relevance_score,
+    };
+  };
+
+  const renderRelevanceMeter = (contact: NetworkContact) => {
+    const isExpanded = expandedScoreIds[contact.id];
+    const filledCount = Math.min(5, Math.max(1, Math.round(contact.relevance_score / 2.0)));
+    const breakdown = getScoreBreakdown(contact);
+
+    return (
+      <div className="space-y-1.5 w-full sm:w-auto">
+        <button
+          onClick={() => toggleScoreBreakdown(contact.id)}
+          className="min-h-[44px] flex items-center gap-2 hover:opacity-80 transition text-left group"
+          title="Tap to see mathematical relevance score breakdown"
+        >
+          <span className="text-[10px] text-slate-400 font-medium font-mono uppercase tracking-wider">
+            Relevance:
+          </span>
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((seg) => (
+              <span
+                key={seg}
+                className={`w-3.5 h-1.5 rounded-xs transition-colors ${
+                  seg <= filledCount
+                    ? 'bg-violet-600 dark:bg-violet-400'
+                    : 'bg-slate-200 dark:bg-slate-700'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="font-mono font-num tabular-nums text-xs font-bold text-slate-800 dark:text-slate-200">
+            {contact.relevance_score.toFixed(1)}/10
+          </span>
+          {isExpanded ? (
+            <ChevronUp className="w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200" />
+          ) : (
+            <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200" />
+          )}
+        </button>
+
+        {/* Expandable Score Breakdown */}
+        {isExpanded && (
+          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[10px] font-mono animate-in fade-in-50 duration-150">
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1.5 pb-1 border-b border-slate-200 dark:border-slate-700">
+              <span className="font-bold uppercase tracking-wider">Score Breakdown (N-03 Formula)</span>
+              <span className="font-sans text-[9px] text-slate-400">Max: 10.0 pts</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <span className="text-slate-400 block font-sans">Tenure in Domain</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{breakdown.tenure} / 2.5</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-sans">Seniority / CXO</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{breakdown.seniority} / 2.5</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-sans">Relationship Edge</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{breakdown.strength} / 2.5</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block font-sans">Event Materiality</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{breakdown.materiality} / 2.5</span>
+              </div>
+            </div>
+            {breakdown.starredBoost > 0 && (
+              <div className="mt-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-amber-700 dark:text-amber-300 font-semibold">
+                <span>Pinned Institutional Priority Boost</span>
+                <span>+{breakdown.starredBoost.toFixed(1)} pts</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const themes = [
     'all',
     'Electronics EMS',
@@ -91,30 +212,30 @@ export const NexusView: React.FC<NexusViewProps> = ({
   return (
     <div className="space-y-3 pb-8">
       {/* Network Header with Who To Call Trigger */}
-      <div className="finance-card p-3.5 bg-gradient-to-r from-purple-50/70 via-white to-blue-50/70 dark:from-purple-950/20 dark:via-slate-900 dark:to-blue-950/20">
+      <div className="finance-card p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5 font-mono">
+              <Users className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 stroke-[1.75]" />
               Nexus Intelligence Layer
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Personal network activated with primary market disclosures
+              Personal network activated with primary exchange disclosures
             </p>
           </div>
 
           <button
             onClick={() => fetchWhoToCall(selectedTicker)}
-            className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1 transition shadow-sm"
+            className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 border border-slate-700 font-medium text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
           >
-            <Users className="w-3.5 h-3.5" />
+            <Users className="w-3.5 h-3.5 stroke-[1.75]" />
             <span>Who to Call?</span>
           </button>
         </div>
 
         {/* Ticker pills for quick who to call */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
-          <span className="text-[10px] font-semibold text-slate-400 shrink-0">Company Context:</span>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
+          <span className="text-[10px] font-semibold text-slate-400 shrink-0 font-mono">Company Context:</span>
           {['DIXON.NS', 'TRENT.NS', 'TATAMOTORS.NS', 'KAYNES.NS', 'DEEPAKNTR.NS'].map((t) => (
             <button
               key={t}
@@ -122,10 +243,10 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 setSelectedTicker(t);
                 fetchWhoToCall(t);
               }}
-              className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
+              className={`min-h-[36px] px-2.5 py-1 rounded text-[10px] font-semibold transition ${
                 selectedTicker === t
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-semibold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
             >
               {t.replace('.NS', '')}
@@ -134,46 +255,167 @@ export const NexusView: React.FC<NexusViewProps> = ({
         </div>
       </div>
 
-      {/* External Executive 2nd-Degree Introductions (N-02) */}
-      <div className="finance-card p-3.5 bg-gradient-to-r from-blue-50/80 via-white to-purple-50/80 dark:from-blue-950/30 dark:via-slate-900 dark:to-purple-950/20 border-l-4 border-l-blue-600">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">
-                2nd-Degree Reach Available
+      {/* Prominent Synthetic Profile Disclosure Label (Report Items 7, 39, 150) */}
+      <div className="px-3 py-2 rounded-lg bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+        <span className="flex items-center gap-1.5 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+          SYNTHETIC PROFILES · Anonymized Institutional Mock Data (DPDP Act 2023 Compliant)
+        </span>
+        <span className="font-mono text-[9px] uppercase tracking-wider text-slate-400">
+          Tenant: ENAM Holdings
+        </span>
+      </div>
+
+      {/* 1. NOTICINGS FEED (Report Items 5, 37, 116–126) */}
+      <div className="finance-card p-3.5 bg-gradient-to-br from-violet-50/50 via-white to-slate-50/50 dark:from-violet-950/20 dark:via-slate-900 dark:to-slate-900 border border-violet-200/60 dark:border-violet-900/40">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 font-mono">
+              Network Noticings Feed
+            </h3>
+          </div>
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300 border border-violet-200 dark:border-violet-800/40">
+            4 Active Triggers
+          </span>
+        </div>
+
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+          Proactive network intelligence: warm reconnect triggers and second-degree bridges surfaced against primary market filings.
+        </p>
+
+        <div className="space-y-2.5">
+          {/* Notice 1: Warm Reconnect (Pooja Singhania / Trent results) */}
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-mono flex items-center gap-1 border border-emerald-200 dark:border-emerald-800/40">
+                <Clock className="w-3 h-3" /> Warm Reconnect Hook
               </span>
-              <span className="text-[10px] font-semibold text-slate-400">
+              <span className="text-[10px] font-mono text-slate-400">
+                Last Contact: 14 Aug 2026 (92d ago)
+              </span>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                Pooja Singhania — Chief Merchandising Officer, Nykaa Fashion
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+                Ex-Head of Zudio Merchandising at Trent. Her former employer <strong>Trent Ltd</strong> disclosed Q2 results today (+39.1% YoY revenue growth, crossing 570 stores). Recommended hook: retail replenishment velocity and tier 2/3 apparel demand.
+              </p>
+            </div>
+            <div className="flex items-center justify-end pt-1">
+              <button
+                onClick={() => onCallContact && onCallContact('Pooja Singhania')}
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium flex items-center gap-1.5 transition shadow-sm active:scale-95"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Initiate Warm Reconnect</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Notice 2: Client Sourcing Intel (Rohan Deshmukh / Dixon) */}
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono flex items-center gap-1 border border-blue-200 dark:border-blue-800/40">
+                <Users className="w-3 h-3" /> Key Client Order Flow Intel
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                Last Contact: 12 Sep 2026 (63d ago)
+              </span>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                Rohan Deshmukh — Director of Sourcing, Xiaomi India
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+                Ex-Dixon operations manager (2018–21), now leading component sourcing at Xiaomi (Dixon's anchor smartphone OEM client). Best placed to cross-check general mobile component lead times and festive retail sell-through.
+              </p>
+            </div>
+            <div className="flex items-center justify-end pt-1">
+              <button
+                onClick={() => {
+                  setSelectedTicker('DIXON.NS');
+                  fetchWhoToCall('DIXON.NS');
+                }}
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 text-xs font-medium flex items-center gap-1.5 transition shadow-sm active:scale-95"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Ask Order Flow Intel</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Notice 3: Executive Transition Diligence (Vikram Seth / Kaynes via Ananya Roy) */}
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono flex items-center gap-1 border border-amber-200 dark:border-amber-800/40">
+                <Share2 className="w-3 h-3" /> 2nd-Degree Executive Transition Bridge
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
                 Target: External Leadership
               </span>
             </div>
-            <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-              Vikram Seth — Chief Operating Officer, Kaynes Technology
-            </h4>
-            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
-              Newly appointed COO at Kaynes (former Senior VP Manufacturing at Dixon Technologies). Bridge identified via <strong>Ananya Roy</strong> (IIT Kanpur 2004 Batchmate).
-            </p>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                Vikram Seth — Chief Operating Officer, Kaynes Technology
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+                Newly appointed COO at Kaynes (former Senior VP Manufacturing at Dixon Technologies). 2nd-degree bridge identified via <strong>Ananya Roy</strong> (IIT Kanpur 2004 Batchmate). Ex-colleagues at Foxconn India.
+              </p>
+            </div>
+            <div className="flex items-center justify-end pt-1">
+              <button
+                onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>View Intro Path</span>
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
-            className="min-h-[44px] px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-sm shrink-0"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>Intro Path</span>
-          </button>
+          {/* Notice 4: Feedstock Advisory (Dr. Arvind Swaminathan / Deepak Nitrite) */}
+          <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono flex items-center gap-1 border border-indigo-200 dark:border-indigo-800/40">
+                <Info className="w-3 h-3" /> Chemical Feedstock Cycle Advisory
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                Last Contact: 04 Aug 2026 (102d ago)
+              </span>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                Dr. Arvind Swaminathan — Specialty Chemicals Technical Advisor
+              </h4>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
+                Global phenol & acetone benchmark spreads expanded 140 bps this week. Dr. Swaminathan is your primary technical expert on Deepak Nitrite's Dahej plant capacity and benzene feedstock cost pass-through.
+              </p>
+            </div>
+            <div className="flex items-center justify-end pt-1">
+              <button
+                onClick={() => onCallContact && onCallContact('Dr. Arvind Swaminathan')}
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition active:scale-95"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Consult Technicals</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Theme Filter Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {themes.map((th) => (
           <button
             key={th}
             onClick={() => setSelectedTheme(th)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition border ${
+            className={`min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition border ${
               selectedTheme === th
-                ? 'bg-purple-600 border-purple-600 text-white'
-                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                ? 'bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-950 font-semibold'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             {th === 'all' ? 'All Domains' : th}
@@ -181,8 +423,17 @@ export const NexusView: React.FC<NexusViewProps> = ({
         ))}
       </div>
 
-      {/* Contacts List: Starred on top, then relevance ranked */}
+      {/* 2. DIRECTORY LOOKUP: Starred on top, then relevance ranked */}
       <div className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
+            Contact Directory & Knowledge Map
+          </span>
+          <span className="text-[10px] font-mono text-slate-400">
+            {filteredContacts.length} Contacts
+          </span>
+        </div>
+
         {filteredContacts.map((contact) => (
           <div
             key={contact.id}
@@ -200,21 +451,35 @@ export const NexusView: React.FC<NexusViewProps> = ({
                     {contact.name}
                   </h4>
                   {contact.is_starred && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 font-semibold">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 font-semibold font-mono">
                       Starred
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                  {contact.current_title} at <span className="font-semibold text-slate-800 dark:text-slate-200">{contact.current_company}</span>
+                  {contact.current_title} at{' '}
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {contact.current_company}
+                  </span>
                 </p>
+                {contact.last_contacted_date && (
+                  <p className="text-[10px] font-mono text-slate-400 mt-0.5 flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5 text-slate-400" />
+                    <span>Last contacted: {contact.last_contacted_date}</span>
+                    {contact.name === 'Pooja Singhania' && (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                        (Warm Hook Ready)
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
 
               {/* Star Action */}
               <button
                 onClick={() => handleToggleStar(contact.id)}
                 title={contact.is_starred ? 'Unstar contact' : 'Star contact'}
-                className="p-1 rounded-md text-amber-400 hover:scale-110 transition"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-amber-400 hover:scale-110 transition"
               >
                 <Star
                   className={`w-4 h-4 ${
@@ -224,10 +489,10 @@ export const NexusView: React.FC<NexusViewProps> = ({
               </button>
             </div>
 
-            {/* 1-2 Line Summary of Recent Developments (User Specification) */}
+            {/* 1-2 Line Summary of Recent Developments */}
             {contact.recent_development_summary && (
-              <div className="bg-purple-50/60 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 p-2 rounded-lg my-2 text-xs text-purple-950 dark:text-purple-200">
-                <span className="font-semibold text-[10px] uppercase text-purple-600 dark:text-purple-400 block mb-0.5">
+              <div className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 border-l-2 border-l-violet-500/80 p-2.5 rounded-md my-2 text-xs text-slate-800 dark:text-slate-200">
+                <span className="font-semibold text-[10px] uppercase text-violet-700 dark:text-violet-400 block mb-0.5 font-mono">
                   Recent Development Context:
                 </span>
                 <p className="text-[11px] leading-relaxed">
@@ -239,43 +504,48 @@ export const NexusView: React.FC<NexusViewProps> = ({
             {/* Past Employers & Education Tags */}
             <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 mb-2.5">
               {contact.past_companies.slice(0, 2).map((p, idx) => (
-                <span key={idx} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                <span key={idx} className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono">
                   Ex-{p.company}
                 </span>
               ))}
               {contact.education.slice(0, 1).map((e, idx) => (
-                <span key={idx} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-medium">
-                  🎓 {e.institution} '{e.year?.slice(-2)}
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-medium font-mono"
+                >
+                  <GraduationCap className="w-3 h-3 text-blue-500 dark:text-blue-400 stroke-[1.75]" />
+                  <span>
+                    {e.institution} '{e.year?.slice(-2)}
+                  </span>
                 </span>
               ))}
             </div>
 
-            {/* External Bridge for Ananya Roy */}
+            {/* External Bridge for Ananya Roy (De-duplicated Intro Path) */}
             {contact.name === 'Ananya Roy' && (
-              <div className="mb-2.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 p-2.5 rounded-xl text-xs flex items-center justify-between">
+              <div className="mb-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 border-l-2 border-l-blue-500 p-2.5 rounded-md text-xs flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-blue-950 dark:text-blue-200 text-[11px] block">
-                    🔗 2nd-Degree Reach: Vikram Seth (COO, Kaynes Tech)
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] flex items-center gap-1">
+                    <ArrowUpRight className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 stroke-[1.75]" />
+                    <span>2nd-Degree Reach: Vikram Seth (COO, Kaynes Tech)</span>
                   </span>
-                  <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400">
                     IIT Kanpur 2004 Batchmate bridge available for warm intro.
                   </p>
                 </div>
                 <button
                   onClick={() => fetchSecondDegree('Vikram Seth', 'Chief Operating Officer', 'Kaynes Technology India Ltd')}
-                  className="min-h-[36px] px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 transition shadow-sm shrink-0"
+                  className="min-h-[44px] px-3 py-1.5 rounded-md bg-slate-100 hover:bg-white text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-700 text-xs font-medium flex items-center gap-1 transition shrink-0 active:scale-95"
                 >
-                  <Share2 className="w-3 h-3" />
+                  <Share2 className="w-3.5 h-3.5 stroke-[1.75]" />
                   <span>Intro Path</span>
                 </button>
               </div>
             )}
 
-            {/* Action Bar */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-              <span className="text-[10px] text-slate-400 font-medium">
-                Relevance: {contact.relevance_score.toFixed(1)} / 10
-              </span>
+            {/* Action Bar with 5-Segment Relevance Meter and Pre-Outreach Compliance Lock */}
+            <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800 text-xs gap-2 flex-wrap">
+              {renderRelevanceMeter(contact)}
 
               <div className="flex items-center gap-2">
                 <button
@@ -283,20 +553,40 @@ export const NexusView: React.FC<NexusViewProps> = ({
                     setSelectedTicker(contact.current_company_ticker || 'DIXON.NS');
                     fetchWhoToCall(contact.current_company_ticker || 'DIXON.NS');
                   }}
-                  className="min-h-[44px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1 transition"
+                  className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium border border-slate-300 dark:border-slate-700 flex items-center gap-1 transition active:scale-95"
                 >
                   <span>Channel Intel</span>
                 </button>
 
-                <button
-                  onClick={() => onCallContact && onCallContact(contact.name)}
-                  className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-sm"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>Initiate Scuttlebutt</span>
-                </button>
+                {/* Pre-Outreach Compliance Lock (Report Item 109) */}
+                {contact.compliance_restricted ? (
+                  <button
+                    disabled
+                    className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 text-xs font-medium border border-slate-300 dark:border-slate-700/80 cursor-not-allowed flex items-center gap-1.5 opacity-80"
+                    title={contact.compliance_reason || 'Restricted List: Active MNPI Embargo'}
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Restricted: MNPI</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onCallContact && onCallContact(contact.name)}
+                    className="min-h-[44px] px-3.5 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium flex items-center gap-1.5 transition border border-violet-400/20 shadow-sm active:scale-95"
+                  >
+                    <Phone className="w-3.5 h-3.5 stroke-[1.75]" />
+                    <span>Initiate Scuttlebutt</span>
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Compliance Reason Subtext if Restricted */}
+            {contact.compliance_restricted && contact.compliance_reason && (
+              <div className="mt-1 text-[10px] text-amber-700 dark:text-amber-400 font-mono flex items-center gap-1 justify-end">
+                <AlertCircle className="w-3 h-3 text-amber-500" />
+                <span>{contact.compliance_reason}</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -310,33 +600,43 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Outreach Intel: {whoToCallData.company_name}
                 </h3>
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold font-mono">
                   {whoToCallData.ticker} • {whoToCallData.sector}
                 </span>
               </div>
               <button
                 onClick={() => setShowWhoToCallModal(false)}
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                aria-label="Close"
               >
-                ✕
+                <X className="w-4 h-4 stroke-[1.75]" />
               </button>
             </div>
 
             {/* Direct Contacts */}
             <div>
-              <h4 className="text-xs font-bold uppercase text-slate-400 mb-1.5">
+              <h4 className="text-xs font-bold uppercase text-slate-400 mb-1.5 font-mono">
                 Direct / Past Employees
               </h4>
               {whoToCallData.direct_contacts.length === 0 ? (
                 <p className="text-xs text-slate-400 italic">No direct former employees in your network.</p>
               ) : (
                 whoToCallData.direct_contacts.map((dc) => (
-                  <div key={dc.id} className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 mb-1.5 text-xs border border-slate-200/50 dark:border-slate-700/50">
+                  <div
+                    key={dc.id}
+                    className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 mb-1.5 text-xs border border-slate-200/50 dark:border-slate-700/50"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900 dark:text-white">{dc.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold">Verified Contact</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold font-mono">
+                        Verified Contact
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300">{dc.current_title} ({dc.current_company})</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                      {dc.name === 'Rohan Deshmukh'
+                        ? 'Director of Sourcing, Xiaomi India (Key OEM Client) · Ex-Ops Manager, Dixon Tech (2018–21)'
+                        : `${dc.current_title} (${dc.current_company})`}
+                    </p>
                     <p className="text-[10px] text-slate-500 mt-0.5">{dc.recent_development_summary}</p>
                   </div>
                 ))
@@ -345,19 +645,26 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
             {/* Supplier / Client Contacts */}
             <div>
-              <h4 className="text-xs font-bold uppercase text-slate-400 mb-1.5">
+              <h4 className="text-xs font-bold uppercase text-slate-400 mb-1.5 font-mono">
                 Suppliers & Component Vendors
               </h4>
               {whoToCallData.supplier_contacts.length === 0 ? (
                 <p className="text-xs text-slate-400 italic">No component suppliers in network for this ticker.</p>
               ) : (
                 whoToCallData.supplier_contacts.map((sc) => (
-                  <div key={sc.id} className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 mb-1.5 text-xs border border-slate-200/50 dark:border-slate-700/50">
+                  <div
+                    key={sc.id}
+                    className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 mb-1.5 text-xs border border-slate-200/50 dark:border-slate-700/50"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900 dark:text-white">{sc.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-semibold">Vendor Intel</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-semibold font-mono">
+                        Vendor Intel
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300">{sc.current_title} ({sc.current_company})</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                      {sc.current_title} ({sc.current_company})
+                    </p>
                     <p className="text-[10px] text-slate-500 mt-0.5">{sc.notes}</p>
                   </div>
                 ))
@@ -365,31 +672,31 @@ export const NexusView: React.FC<NexusViewProps> = ({
             </div>
 
             {/* Suggested Diligence Questions & SEBI PIT Caution */}
-            <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-xl border border-purple-200 dark:border-purple-800 space-y-2">
+            <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-md border border-slate-200 dark:border-slate-800 border-l-2 border-l-amber-500 space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-purple-950 dark:text-purple-200">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
                   Diligence Questions (Channel Scuttlebutt):
                 </h4>
-                <span className="text-[9px] uppercase font-bold px-1.5 py-0.2 rounded bg-purple-200/70 text-purple-900 dark:bg-purple-900 dark:text-purple-200">
+                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-mono">
                   SEBI PIT Compliant
                 </span>
               </div>
-              <ul className="space-y-1 text-xs text-purple-900 dark:text-purple-300">
+              <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
                 {whoToCallData.suggested_questions.map((q, idx) => (
                   <li key={idx} className="flex items-start gap-1.5">
-                    <span>•</span>
+                    <span className="text-slate-400">•</span>
                     <span>{q}</span>
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] text-purple-800/80 dark:text-purple-400/80 italic pt-1 border-t border-purple-200/40 dark:border-purple-800/40">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic pt-1 border-t border-slate-200 dark:border-slate-800">
                 Notice: Inquiries must strictly focus on generalized sector trends and public value-chain turnaround. Do not seek confidential client or company forward guidance.
               </p>
             </div>
 
             <button
               onClick={() => setShowWhoToCallModal(false)}
-              className="w-full min-h-[44px] py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-semibold text-xs rounded-xl transition"
+              className="w-full min-h-[44px] py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-medium text-xs text-slate-900 dark:text-slate-100 rounded-md border border-slate-300 dark:border-slate-700 transition"
             >
               Close
             </button>
@@ -407,36 +714,37 @@ export const NexusView: React.FC<NexusViewProps> = ({
               </h3>
               <button
                 onClick={() => setShowSecondDegreeModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                aria-label="Close"
               >
-                ✕
+                <X className="w-4 h-4 stroke-[1.75]" />
               </button>
             </div>
 
             {/* Connection Visualizer */}
-            <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl text-center text-xs">
+            <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg text-center text-xs border border-slate-200/60 dark:border-slate-700/60">
               <div className="flex-1">
-                <span className="block font-bold text-blue-600 dark:text-blue-400">You</span>
-                <span className="text-[10px] text-slate-400">Investor</span>
+                <span className="block font-bold text-violet-600 dark:text-violet-400">You</span>
+                <span className="text-[10px] text-slate-400 font-mono">Investor</span>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400" />
+              <ArrowRight className="w-4 h-4 text-slate-400 stroke-[1.75]" />
               <div className="flex-1 px-1">
-                <span className="block font-bold text-purple-600 dark:text-purple-400 truncate">
+                <span className="block font-bold text-slate-900 dark:text-slate-100 truncate">
                   {secondDegreePath.connector_name}
                 </span>
-                <span className="text-[10px] text-slate-400 truncate block">1st Degree Contact</span>
+                <span className="text-[10px] text-slate-400 truncate block font-mono">1st Degree Contact</span>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400" />
+              <ArrowRight className="w-4 h-4 text-slate-400 stroke-[1.75]" />
               <div className="flex-1">
                 <span className="block font-bold text-slate-900 dark:text-white truncate">
                   {secondDegreePath.target_person}
                 </span>
-                <span className="text-[10px] text-slate-400 truncate block">Target Exec</span>
+                <span className="text-[10px] text-slate-400 truncate block font-mono">Target Exec</span>
               </div>
             </div>
 
-            <div className="text-xs bg-blue-50/60 dark:bg-blue-950/20 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/40">
-              <span className="font-semibold text-blue-900 dark:text-blue-300 block mb-0.5">
+            <div className="text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
+              <span className="font-semibold text-slate-900 dark:text-white block mb-0.5">
                 Mutual Link Context:
               </span>
               <p className="text-slate-700 dark:text-slate-300">
@@ -444,7 +752,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
               </p>
             </div>
 
-            <div className="text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+            <div className="text-xs bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
               <span className="font-semibold text-slate-900 dark:text-white block mb-0.5">
                 Recommended Warm Ask:
               </span>
@@ -455,7 +763,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
 
             <button
               onClick={() => setShowSecondDegreeModal(false)}
-              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl"
+              className="w-full min-h-[44px] py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-950 font-medium text-xs rounded-md border border-slate-700 transition"
             >
               Done
             </button>

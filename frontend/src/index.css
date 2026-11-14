@@ -31,3 +31,18 @@
 .finance-badge {
   @apply px-2 py-0.5 text-xs font-semibold rounded-md uppercase tracking-wider inline-flex items-center gap-1;
 }
+
+/* Institutional Tabular Numeral Discipline */
+.font-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Hide horizontal chip scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -142,7 +142,7 @@ ANNOUNCEMENTS_SEED = [
         "category": "management_change",
         "title": "Kaynes Technology India Ltd: Appointment of Mr. Vikram Seth as Chief Operating Officer (COO)",
         "description": "Board of Directors approved the appointment of Mr. Vikram Seth as COO effective December 1, 2026. Prior to this, Mr. Seth was Senior Vice President - Electronics Manufacturing at Dixon Technologies (India) Ltd. He holds a B.Tech from IIT Kanpur.",
-        "filing_time": "2026-11-13T17:15:00",
+        "filing_time": "2026-11-14T17:15:00",
         "materiality_score": 9,
         "content_hash": compute_hash("Kaynes Technology India Limited appointment Vikram Seth COO Dec 2026"),
         "financial_basis": "CONSOLIDATED",
@@ -160,7 +160,8 @@ ANNOUNCEMENTS_SEED = [
             "connected_person_name": "Ananya Roy",
             "relationship": "IIT Kanpur 2004 Alumnus Connection",
             "degree_of_separation": 1,
-            "context": "Ananya Roy (Partner, Peak XV Partners) is in your network (Strength: 5/5). Shared IIT Kanpur Class of 2004 alma mater with Vikram Seth."
+            "context": "Ananya Roy (Partner, Peak XV Partners) is in your network (Strength: 5/5). Shared IIT Kanpur Class of 2004 alma mater with Vikram Seth.",
+            "why_line": "IIT Kanpur 2004 classmate with incoming COO Vikram Seth. Warm connection (Strength: 5/5) to reference-check operational execution track record at Dixon/Foxconn."
         }
     },
     {
@@ -170,18 +171,22 @@ ANNOUNCEMENTS_SEED = [
         "category": "results",
         "title": "Dixon Technologies (India) Ltd: Unaudited Financial Results for Q2 FY27",
         "description": "Board approved unaudited consolidated financial results for the quarter ended September 30, 2026 (Q2 FY27). Consolidated revenue reached ₹11,534 Cr (+120.4% YoY). EBITDA stood at ₹420 Cr (3.64% margin), PBT at ₹290 Cr, and PAT at ₹215 Cr (+105.0% YoY).",
-        "filing_time": "2026-11-13T18:45:00",
+        "filing_time": "2026-11-14T18:45:00",
         "materiality_score": 10,
         "content_hash": compute_hash("Dixon Technologies Unaudited Financial Results Q2FY27 Sept 30 2026"),
         "financial_basis": "CONSOLIDATED",
         "headline_metrics": {
             "revenue_cr": 11534.0,
-            "ebitda_cr": 420.0,
-            "ebitda_margin_pct": 3.64,
-            "pbt_cr": 290.0,
-            "pat_cr": 215.0,
             "revenue_qoq_pct": 75.2,
             "revenue_yoy_pct": 120.4,
+            "ebitda_cr": 420.0,
+            "ebitda_margin_pct": 3.64,
+            "ebitda_qoq_pct": 64.1,
+            "ebitda_yoy_pct": 108.9,
+            "pbt_cr": 290.0,
+            "pbt_qoq_pct": 70.6,
+            "pbt_yoy_pct": 112.5,
+            "pat_cr": 215.0,
             "pat_qoq_pct": 95.5,
             "pat_yoy_pct": 105.0
         },
@@ -189,9 +194,10 @@ ANNOUNCEMENTS_SEED = [
         "network_connection": {
             "connected_person_id": "net-02",
             "connected_person_name": "Rohan Deshmukh",
-            "relationship": "Director of Sourcing, Xiaomi India (Channel Diligence Contact)",
+            "relationship": "Director of Sourcing, Xiaomi India (Key OEM Client) · Ex-Ops Manager, Dixon Tech (2018–21)",
             "degree_of_separation": 1,
-            "context": "Permissible scuttlebutt: Broad consumer electronics supply chain lead times and festive retail sell-through (SEBI PIT Compliant: No proprietary OEM internal data)."
+            "context": "Permissible scuttlebutt: Broad consumer electronics supply chain lead times and festive retail sell-through (SEBI PIT Compliant: No proprietary OEM internal data).",
+            "why_line": "Ex-Dixon operations (2018–21), now sourcing at Xiaomi (key Dixon client). Best placed to cross-check mobile order run-rate."
         }
     },
     {
@@ -201,7 +207,7 @@ ANNOUNCEMENTS_SEED = [
         "category": "management_change",
         "title": "Deepak Nitrite Ltd: Resignation of Chief Financial Officer Sanjay Upadhyay; Transition Plan",
         "description": "Mr. Sanjay Upadhyay has tendered resignation from the position of CFO due to personal health reasons after 12 years of service. The Board has appointed Ms. Radhika Sharma (former VP Finance at Tata Chemicals Ltd) as CFO Designate effective November 15, 2026.",
-        "filing_time": "2026-11-13T16:00:00",
+        "filing_time": "2026-11-14T16:00:00",
         "materiality_score": 9,
         "content_hash": compute_hash("Deepak Nitrite CFO Sanjay Upadhyay resignation Radhika Sharma"),
         "financial_basis": "CONSOLIDATED",
@@ -218,7 +224,8 @@ ANNOUNCEMENTS_SEED = [
             "connected_person_name": "Dr. Arvind Swaminathan",
             "relationship": "Independent Specialty Chemicals Technical Consultant",
             "degree_of_separation": 1,
-            "context": "Former Head of Technical Operations at Atul Ltd; independent expert on Indian specialty chemical plants and operational cost structures."
+            "context": "Former Head of Technical Operations at Atul Ltd; independent expert on Indian specialty chemical plants and operational cost structures.",
+            "why_line": "Ex-Technical Head at Atul Ltd & chemical consultant. Best placed to evaluate Deepak Nitrite's chemical plant cost structures and margin sensitivity."
         }
     },
     {
@@ -228,18 +235,22 @@ ANNOUNCEMENTS_SEED = [
         "category": "results",
         "title": "Trent Ltd: Financial Results for Second Quarter Ended September 30, 2026 (Q2 FY27)",
         "description": "Standalone revenue for Q2 FY27 stood at ₹4,035 Cr (+39.1% YoY). Operating EBITDA margin was 15.29%. Zudio retail network crossed 570 operational stores nationwide.",
-        "filing_time": "2026-11-13T14:30:00",
+        "filing_time": "2026-11-14T14:30:00",
         "materiality_score": 9,
         "content_hash": compute_hash("Trent Financial Results Q2FY27 Sept 30 2026 Zudio 570 stores"),
         "financial_basis": "STANDALONE",
         "headline_metrics": {
             "revenue_cr": 4035.0,
-            "ebitda_cr": 617.0,
-            "ebitda_margin_pct": 15.29,
-            "pbt_cr": 465.0,
-            "pat_cr": 335.0,
             "revenue_qoq_pct": 1.2,
             "revenue_yoy_pct": 39.1,
+            "ebitda_cr": 617.0,
+            "ebitda_margin_pct": 15.29,
+            "ebitda_qoq_pct": -2.1,
+            "ebitda_yoy_pct": 38.0,
+            "pbt_cr": 465.0,
+            "pbt_qoq_pct": -3.5,
+            "pbt_yoy_pct": 44.0,
+            "pat_cr": 335.0,
             "pat_qoq_pct": -4.2,
             "pat_yoy_pct": 46.2
         },
@@ -249,7 +260,8 @@ ANNOUNCEMENTS_SEED = [
             "connected_person_name": "Pooja Singhania",
             "relationship": "Former Head of Merchandising (Zudio), Trent Ltd",
             "degree_of_separation": 1,
-            "context": "Pooja served at Trent for 7 years until early 2025. Permissible domain: Store replenishment speed and private label sourcing velocity."
+            "context": "Pooja served at Trent for 7 years until early 2025. Permissible domain: Store replenishment speed and private label sourcing velocity.",
+            "why_line": "Former Head of Merchandising at Zudio (7 yrs at Trent). Best placed to evaluate store expansion velocity and private-label inventory turnover."
         }
     },
     {
@@ -259,7 +271,7 @@ ANNOUNCEMENTS_SEED = [
         "category": "M&A",
         "title": "Reliance Industries Ltd: Completion of Media Joint Venture with The Walt Disney Company",
         "description": "Reliance Industries Limited, Viacom18, and The Walt Disney Company announce completion of the transaction combining their Indian entertainment and sports businesses into a joint venture valued at ₹70,352 Cr.",
-        "filing_time": "2026-11-13T12:00:00",
+        "filing_time": "2026-11-14T12:00:00",
         "materiality_score": 8,
         "content_hash": compute_hash("Reliance Viacom18 Disney media transaction 70352 cr"),
         "financial_basis": "CONSOLIDATED",
@@ -310,12 +322,16 @@ ANNOUNCEMENTS_SEED = [
         "financial_basis": "CONSOLIDATED",
         "headline_metrics": {
             "revenue_cr": 101450.0,
-            "ebitda_cr": 11565.0,
-            "ebitda_margin_pct": 11.40,
-            "pbt_cr": 4980.0,
-            "pat_cr": 3450.0,
             "revenue_qoq_pct": -6.1,
             "revenue_yoy_pct": -0.4,
+            "ebitda_cr": 11565.0,
+            "ebitda_margin_pct": 11.40,
+            "ebitda_qoq_pct": -12.5,
+            "ebitda_yoy_pct": -14.2,
+            "pbt_cr": 4980.0,
+            "pbt_qoq_pct": -28.2,
+            "pbt_yoy_pct": -18.5,
+            "pat_cr": 3450.0,
             "pat_qoq_pct": -34.8,
             "pat_yoy_pct": -11.2
         },
@@ -325,7 +341,8 @@ ANNOUNCEMENTS_SEED = [
             "connected_person_name": "Siddharth Verma",
             "relationship": "VP Commercial Vehicle Operations, Tata Motors CV Division",
             "degree_of_separation": 1,
-            "context": "Oversees domestic commercial vehicles division. Permissible domain: Domestic fleet replacement trends and infrastructure truck tonnage."
+            "context": "Oversees domestic commercial vehicles division. Permissible domain: Domestic fleet replacement trends and infrastructure truck tonnage.",
+            "why_line": "VP Commercial Vehicle Operations at Tata Motors CV Division. Best placed to evaluate domestic CV fleet replacement trends and infrastructure tonnage."
         }
     },
     {
@@ -335,7 +352,7 @@ ANNOUNCEMENTS_SEED = [
         "category": "unclassified",
         "title": "HDFC Bank Ltd: Allotment of Equity Shares under Employee Stock Option Scheme",
         "description": "Allotment of 18,240 equity shares of face value Re 1 each pursuant to exercise of stock options.",
-        "filing_time": "2026-11-13T19:00:00",
+        "filing_time": "2026-11-14T19:00:00",
         "materiality_score": 2,
         "content_hash": compute_hash("HDFC Bank allotment of equity shares ESOP 18240"),
         "financial_basis": "STANDALONE",
@@ -350,7 +367,7 @@ ANNOUNCEMENTS_SEED = [
         "category": "unclassified",
         "title": "Reliance Industries Ltd: Compliance Certificate under Reg. 74(5) of SEBI (DP) Regulations",
         "description": "Certificate received from KFin Technologies certifying dematerialization of shares for the quarter ended September 30, 2026.",
-        "filing_time": "2026-11-13T15:00:00",
+        "filing_time": "2026-11-14T15:00:00",
         "materiality_score": 1,
         "content_hash": compute_hash("Reliance Reg 74(5) SEBI DP compliance certificate KFin"),
         "financial_basis": "STANDALONE",
@@ -365,7 +382,7 @@ ANNOUNCEMENTS_SEED = [
         "category": "unclassified",
         "title": "Larsen & Toubro Ltd: Intimation of Loss of Share Certificate",
         "description": "Intimation regarding issue of letter of confirmation in lieu of lost share certificates.",
-        "filing_time": "2026-11-13T13:30:00",
+        "filing_time": "2026-11-14T13:30:00",
         "materiality_score": 1,
         "content_hash": compute_hash("Larsen Toubro loss of share certificate duplicate"),
         "financial_basis": "STANDALONE",
@@ -399,7 +416,7 @@ ANOMALIES_SEED = [
         "anomaly_type": "DUAL_TECHNICAL_SURGE",
         "severity": "CRITICAL",
         "headline": "Dixon Tech: +5.2% Price Move on 4.8x Volume Surge",
-        "detail": "Dual technical breakout: Traded volume reached 1.68M shares (4.80x 20-day SMA) alongside +5.2% return (Z-score: +2.36σ, 60-day σ: 2.15%). Coincides with Q2 FY27 earnings disclosure (Consolidated revenue ₹11,534 Cr, +120.4% YoY; PAT ₹215 Cr, +105.0% YoY).",
+        "detail": "Dual technical breakout: Traded volume reached 1.68M shares (4.80x 20-day SMA) alongside +5.2% move (Z-score: +2.36σ, 60-day σ: 2.15%). Coincides with Q2 FY27 filing.",
         "metrics": {"volume_multiple": 4.8, "daily_return_pct": 5.2, "volume": 1680000, "sma_20d": 350000, "z_score": 2.36, "sigma_60d": 2.15, "as_of": "2026-11-12 15:30 IST (EOD)"},
         "created_at": "2026-11-12T16:00:00",
     },
@@ -451,12 +468,15 @@ ANOMALIES_SEED = [
 
 # Guidance Track Record v2 Schema (D-04: Range and Verbatim Support)
 # Clean separation of revenue run rate (₹ Cr) vs production volume run rate (M units/month)
+# Full 4-quarter worked example: Q3FY26, Q4FY26, Q1FY27, Q2FY27
 GUIDANCE_HISTORY_SEED = [
+    # --- DIXON TECHNOLOGIES: 4-QUARTER TRACK RECORD ---
+    # 1. Revenue Run Rate (Q3FY26 through Q2FY27)
     {
         "isin": "INE806N01020",
         "ticker": "DIXON.NS",
         "fiscal_quarter": "Q2FY27",
-        "metric": "Mobile Segment Revenue Run Rate",
+        "metric": "Mobile Segment Revenue",
         "guidance_type": "RANGE",
         "min_guidance": 7500.0,
         "max_guidance": 8000.0,
@@ -471,8 +491,124 @@ GUIDANCE_HISTORY_SEED = [
     {
         "isin": "INE806N01020",
         "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q1FY27",
+        "metric": "Consolidated Revenue",
+        "guidance_type": "RANGE",
+        "min_guidance": 6200.0,
+        "max_guidance": 6500.0,
+        "promised_guidance": "Consolidated quarterly revenue guided between ₹6,200 Cr and ₹6,500 Cr.",
+        "delivered_actual": "Delivered ₹6,580 Cr consolidated revenue (+101.2% YoY).",
+        "variance": "+1.2% above high end of guided corridor.",
+        "status": "BEAT",
+        "management_quote": "Revenue growth was led by continuous mobile contract onboarding with initial ramp-up for Transsion and Motorola.",
+        "source_doc_ref": "Dixon Q1 FY27 Concall Transcript, Page 3",
+        "delivery_notes": "Strong festive channel stocking and factory floor utilization exceeded 85%."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q4FY26",
+        "metric": "Consolidated Revenue",
+        "guidance_type": "RANGE",
+        "min_guidance": 4800.0,
+        "max_guidance": 5200.0,
+        "promised_guidance": "Q4 revenue expected in the corridor of ₹4,800 Cr to ₹5,200 Cr.",
+        "delivered_actual": "Delivered ₹5,120 Cr, meeting guidance inside guided band.",
+        "variance": "Met inside guided band (+2.4% vs midpoint).",
+        "status": "MET",
+        "management_quote": "We closed the fiscal year with Rs 5,120 Cr in Q4, fully meeting the operational corridor communicated in January.",
+        "source_doc_ref": "Dixon Q4 FY26 Investor Presentation, Slide 8",
+        "delivery_notes": "Consumer electronics stabilized while mobile division ramp-up commenced."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q3FY26",
+        "metric": "Consolidated Revenue",
+        "guidance_type": "RANGE",
+        "min_guidance": 4500.0,
+        "max_guidance": 4800.0,
+        "promised_guidance": "Q3 festive revenue guided at ₹4,500 Cr to ₹4,800 Cr.",
+        "delivered_actual": "Delivered ₹4,818 Cr, slightly exceeding guided top end.",
+        "variance": "+0.4% above high-end of guided band.",
+        "status": "BEAT",
+        "management_quote": "Festive season demand across washing machines and lighting helped push top-line past our Rs 4,800 Cr target.",
+        "source_doc_ref": "Dixon Q3 FY26 Concall Transcript, Page 2",
+        "delivery_notes": "Festive sell-through strong across Tier-2/3 consumer electronics."
+    },
+
+    # 2. Operating EBITDA Margin (Q3FY26 through Q2FY27)
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
         "fiscal_quarter": "Q2FY27",
-        "metric": "Smartphone Production Volume",
+        "metric": "Consolidated EBITDA Margin",
+        "guidance_type": "RANGE",
+        "min_guidance": 3.80,
+        "max_guidance": 4.00,
+        "promised_guidance": "Targeting consolidated EBITDA margin corridor of 3.8% to 4.0%.",
+        "delivered_actual": "Reported Q2 FY27 consolidated margin of 3.64%.",
+        "variance": "-16 bps dilution vs guided floor of 3.80%.",
+        "status": "MISSED",
+        "management_quote": "The dilution is purely mathematical: mobile assembly has lower % margins (3.2%) but enormous ROIC and absolute profit dollars.",
+        "source_doc_ref": "Dixon Q2 FY27 Concall Transcript, Page 8",
+        "delivery_notes": "Mix shift toward smartphone pass-through assembly diluted consolidated margin % while generating higher absolute operating cash flow."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q1FY27",
+        "metric": "Consolidated EBITDA Margin",
+        "guidance_type": "NUMERIC",
+        "min_guidance": 4.00,
+        "max_guidance": 4.00,
+        "promised_guidance": "Expect consolidated EBITDA margins to sustain at or above 4.0% through FY27.",
+        "delivered_actual": "Delivered Q1 FY27 EBITDA margin of 3.82%.",
+        "variance": "-18 bps margin dilution vs promised 4.0% floor.",
+        "status": "MISSED",
+        "management_quote": "As mobile share climbed past 65% of mix, headline margin contracted below the 4% threshold.",
+        "source_doc_ref": "Dixon Q1 FY27 Earnings Deck, Slide 12",
+        "delivery_notes": "High component pass-through costs in contract manufacturing."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q4FY26",
+        "metric": "Consolidated EBITDA Margin",
+        "guidance_type": "RANGE",
+        "min_guidance": 4.00,
+        "max_guidance": 4.20,
+        "promised_guidance": "Consolidated margin guided at 4.0% to 4.2%.",
+        "delivered_actual": "Delivered 3.98% EBITDA margin.",
+        "variance": "-2 bps shy of lower corridor bound; considered low-end met.",
+        "status": "MET",
+        "management_quote": "Margins were 3.98%, essentially on our 4.0% budget, with seasonal lighting slowdown.",
+        "source_doc_ref": "Dixon Q4 FY26 Concall Transcript, Page 5",
+        "delivery_notes": "Appliance margins supported steady blended delivery."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q3FY26",
+        "metric": "Consolidated EBITDA Margin",
+        "guidance_type": "RANGE",
+        "min_guidance": 4.00,
+        "max_guidance": 4.20,
+        "promised_guidance": "Guided EBITDA margin between 4.0% and 4.2%.",
+        "delivered_actual": "Delivered 4.02% EBITDA margin.",
+        "variance": "+2 bps within guided corridor.",
+        "status": "MET",
+        "management_quote": "Operating leverage in consumer electronics and home appliances preserved margin discipline.",
+        "source_doc_ref": "Dixon Q3 FY26 Concall Transcript, Page 4",
+        "delivery_notes": "Healthy operating leverage on festive volumes."
+    },
+
+    # 3. Smartphone Monthly Volume (Q3FY26 through Q2FY27)
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q2FY27",
+        "metric": "Smartphone Monthly Volume",
         "guidance_type": "NUMERIC",
         "min_guidance": 3.5,
         "max_guidance": 3.5,
@@ -488,17 +624,49 @@ GUIDANCE_HISTORY_SEED = [
         "isin": "INE806N01020",
         "ticker": "DIXON.NS",
         "fiscal_quarter": "Q1FY27",
-        "metric": "Consolidated EBITDA Margin",
+        "metric": "Smartphone Monthly Volume",
         "guidance_type": "NUMERIC",
-        "min_guidance": 4.0,
-        "max_guidance": 4.0,
-        "promised_guidance": "Expect consolidated EBITDA margins to sustain at or above 4.0% through FY27.",
-        "delivered_actual": "Reported Q2 FY27 margin of 3.64%.",
-        "variance": "-36 bps margin dilution vs promised floor.",
-        "status": "MISSED",
-        "management_quote": "The dilution is purely mathematical: mobile assembly has lower % margins (3.2%) but enormous ROIC and absolute profit dollars.",
-        "source_doc_ref": "Dixon Q1 FY27 Earnings Deck, Slide 12",
-        "delivery_notes": "Mix shift toward smartphone pass-through assembly diluted consolidated margin % while generating higher absolute operating cash flow."
+        "min_guidance": 3.0,
+        "max_guidance": 3.0,
+        "promised_guidance": "Targeting 3.0 million smartphone monthly run rate by June 2026.",
+        "delivered_actual": "Reached 3.1 million units/month run rate.",
+        "variance": "+0.1M units/month beat (+3.3%).",
+        "status": "BEAT",
+        "management_quote": "Line productivity improvements allowed us to exit June at a 3.1 million monthly run rate.",
+        "source_doc_ref": "Dixon Q1 FY27 Concall Transcript, Page 5",
+        "delivery_notes": "Smooth trial production on new SMT lines."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q4FY26",
+        "metric": "Smartphone Monthly Volume",
+        "guidance_type": "NUMERIC",
+        "min_guidance": 2.5,
+        "max_guidance": 2.5,
+        "promised_guidance": "Targeting 2.5 million units monthly run rate by end of FY26.",
+        "delivered_actual": "Exited March 2026 at 2.6 million units/month.",
+        "variance": "+0.1M units/month beat (+4.0%).",
+        "status": "BEAT",
+        "management_quote": "We successfully crossed 2.6 million smartphones per month in our Noida cluster.",
+        "source_doc_ref": "Dixon Q4 FY26 Concall Transcript, Page 7",
+        "delivery_notes": "Capacity installation completed on budget."
+    },
+    {
+        "isin": "INE806N01020",
+        "ticker": "DIXON.NS",
+        "fiscal_quarter": "Q3FY26",
+        "metric": "Smartphone Monthly Volume",
+        "guidance_type": "NUMERIC",
+        "min_guidance": 2.2,
+        "max_guidance": 2.2,
+        "promised_guidance": "Targeting 2.2 million units monthly run rate by December 2025.",
+        "delivered_actual": "Achieved 2.3 million units/month run rate.",
+        "variance": "+0.1M units/month beat (+4.5%).",
+        "status": "BEAT",
+        "management_quote": "Monthly production crossed 2.3M units during festive peak months.",
+        "source_doc_ref": "Dixon Q3 FY26 Concall Transcript, Page 3",
+        "delivery_notes": "First full quarter of Transsion contract integration."
     },
     {
         "isin": "INE849A01020",
@@ -638,13 +806,14 @@ NETWORK_CONTACTS_SEED = [
         "relevance_score": 9.8,
         "recent_development_summary": "IIT Kanpur 2004 alumnus connection with Vikram Seth (newly appointed COO of Kaynes Tech); ex-colleague at Foxconn.",
         "notes": "Go-to expert on Indian electronics manufacturing, contract assembly economics, and executive talent.",
-        "last_verified": "2026-11-01"
+        "last_verified": "2026-11-01",
+        "last_contacted_date": "2026-10-18"
     },
     {
         "id": "net-02",
         "tenant_id": "tenant-enam-01",
         "name": "Rohan Deshmukh",
-        "current_title": "Director of Sourcing & Supply Chain",
+        "current_title": "Director of Sourcing, Xiaomi India (Key OEM Client) · Ex-Ops Manager, Dixon Tech (2018–21)",
         "current_company": "Xiaomi India",
         "current_company_ticker": None,
         "relationship_strength": 5,
@@ -660,7 +829,8 @@ NETWORK_CONTACTS_SEED = [
         "relevance_score": 9.6,
         "recent_development_summary": "Leads OEM component sourcing; valuable contact for general mobile supply chain lead time trends.",
         "notes": "Permissible scuttlebutt source for high-level industry component lead times and festive retail sell-through (SEBI PIT Compliant: No proprietary OEM internal data).",
-        "last_verified": "2026-11-05"
+        "last_verified": "2026-11-05",
+        "last_contacted_date": "2026-09-12"
     },
     {
         "id": "net-03",
@@ -682,7 +852,8 @@ NETWORK_CONTACTS_SEED = [
         "relevance_score": 9.1,
         "recent_development_summary": "Independent chemical process consultant; deep technical knowledge of Deepak Nitrite's Dahej phenol capacity and feedstock dynamics.",
         "notes": "Permissible technical expert for chemical yield curves and nitric acid / benzene feedstock cost pass-through.",
-        "last_verified": "2026-10-20"
+        "last_verified": "2026-10-20",
+        "last_contacted_date": "2026-08-04"
     },
     {
         "id": "net-04",
@@ -705,7 +876,8 @@ NETWORK_CONTACTS_SEED = [
         "relevance_score": 8.9,
         "recent_development_summary": "Ex-Head of Zudio Merchandising at Trent; Trent just announced 39.1% revenue growth and 570 store milestone.",
         "notes": "Natural reconnect hook: discuss retail inventory replenishment velocity and small-town consumer behavior.",
-        "last_verified": "2026-11-09"
+        "last_verified": "2026-11-09",
+        "last_contacted_date": "2026-08-14"
     },
     {
         "id": "net-05",
@@ -726,7 +898,8 @@ NETWORK_CONTACTS_SEED = [
         "relevance_score": 9.4,
         "recent_development_summary": "VP at Tata Motors; oversees domestic commercial vehicle operations following Q2 results.",
         "notes": "Senior IIT Kanpur alumnus. Ground-level insight into domestic commercial fleet demand, freight tonnage, and steel cost indexation.",
-        "last_verified": "2026-11-10"
+        "last_verified": "2026-11-10",
+        "last_contacted_date": "2026-10-24"
     },
     {
         "id": "net-06",
@@ -747,7 +920,8 @@ NETWORK_CONTACTS_SEED = [
         "relevance_score": 8.7,
         "recent_development_summary": "Supplies display and camera sub-assemblies to major Indian EMS assemblers including Dixon.",
         "notes": "Permissible vendor source on component inventory days and BOM localization.",
-        "last_verified": "2026-11-08"
+        "last_verified": "2026-11-08",
+        "last_contacted_date": "2026-07-15"
     },
     # Peer fund contact (Tenant B isolation test)
     {
@@ -761,11 +935,12 @@ NETWORK_CONTACTS_SEED = [
         "is_starred": 1,
         "past_companies": [],
         "education": [],
-        "themes": ["Stealth Investing"],
-        "relevance_score": 10.0,
-        "recent_development_summary": "Confidential research on undisclosed small-caps.",
-        "notes": "STRICTLY PRIVATE: Should never be visible to ENAM users.",
-        "last_verified": "2026-11-12"
+        "themes": ["Private Equity"],
+        "relevance_score": 9.9,
+        "recent_development_summary": "Private peer contact.",
+        "notes": "Tenant isolation barrier check.",
+        "last_verified": "2026-11-01",
+        "last_contacted_date": "2026-09-01"
     }
 ]
 
@@ -791,6 +966,7 @@ def seed_database():
         cursor = conn.cursor()
 
         # Clean purge of transactional and volatile test tables to guarantee idempotency
+        cursor.execute("DELETE FROM notification_outbox;")
         cursor.execute("DELETE FROM user_alert_state;")
         cursor.execute("DELETE FROM detected_anomalies;")
         cursor.execute("DELETE FROM announcements;")
@@ -817,12 +993,24 @@ def seed_database():
         VALUES ('user-enam-01', 2.0, 3.5, 1, 0, 3, '[]', '["results","M&A","management_change","fund_raise","litigation","capex"]');
         """)
 
-        # 4. Seed Companies (ISIN Master)
+        # 4. Seed Companies (ISIN Master + BSE Scrip Code)
+        BSE_SCRIP_CODES = {
+            "INE002A01018": "500325",  # Reliance
+            "INE155A01022": "500570",  # Tata Motors
+            "INE806N01020": "540699",  # Dixon Technologies
+            "INE849A01020": "500251",  # Trent
+            "INE062Y01012": "543664",  # Kaynes Technology
+            "INE736A01011": "542774",  # CDSL
+            "INE040A01034": "500180",  # HDFC Bank
+            "INE288B01029": "506401",  # Deepak Nitrite
+            "INE009A01021": "500209",  # Infosys
+        }
         for c in COMPANIES_SEED:
+            scrip = BSE_SCRIP_CODES.get(c["isin"], "500000")
             cursor.execute("""
-            INSERT OR REPLACE INTO companies (isin, ticker, name, sector, market_cap_tier, market_cap_cr, screener_slug, description)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """, (c["isin"], c["ticker"], c["name"], c["sector"], c["market_cap_tier"], c["market_cap_cr"], c["screener_slug"], c["description"]))
+            INSERT OR REPLACE INTO companies (isin, ticker, name, sector, market_cap_tier, market_cap_cr, screener_slug, description, bse_scrip_code)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (c["isin"], c["ticker"], c["name"], c["sector"], c["market_cap_tier"], c["market_cap_cr"], c["screener_slug"], c["description"], scrip))
 
             # Primary ticker history
             cursor.execute("""
@@ -837,13 +1025,14 @@ def seed_database():
             VALUES (?, ?, ?, ?, ?, ?);
             """, (h["tenant_id"], h["isin"], h["ticker"], h["shares_held"], h["conviction_level"], datetime.now().isoformat()))
 
-        # 6. Seed Market EOD (60 trading days per company for genuine statistical sigma)
+        # 6. Seed Market EOD (60 trading days per company for genuine statistical sigma + deliverable %)
         market_eod_data = generate_market_eod_data()
         for m in market_eod_data:
+            deliv = 68.5 if m["ticker"] == "DIXON.NS" and m["volume_multiple"] > 3.0 else 42.0
             cursor.execute("""
-            INSERT OR REPLACE INTO market_eod (isin, ticker, trade_date, close_price, volume, volume_sma_20d, daily_return_pct, volume_multiple)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """, (m["isin"], m["ticker"], m["trade_date"], m["close_price"], m["volume"], m["volume_sma_20d"], m["daily_return_pct"], m["volume_multiple"]))
+            INSERT OR REPLACE INTO market_eod (isin, ticker, trade_date, close_price, volume, volume_sma_20d, daily_return_pct, volume_multiple, deliv_per)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (m["isin"], m["ticker"], m["trade_date"], m["close_price"], m["volume"], m["volume_sma_20d"], m["daily_return_pct"], m["volume_multiple"], deliv))
 
         # 7. Seed Announcements
         for a in ANNOUNCEMENTS_SEED:
@@ -899,13 +1088,13 @@ def seed_database():
         # 11. Seed Network Contacts
         for nc in NETWORK_CONTACTS_SEED:
             cursor.execute("""
-            INSERT OR REPLACE INTO network_contacts (id, tenant_id, name, current_title, current_company, current_company_ticker, relationship_strength, is_starred, past_companies, education, themes, relevance_score, recent_development_summary, notes, last_verified)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT OR REPLACE INTO network_contacts (id, tenant_id, name, current_title, current_company, current_company_ticker, relationship_strength, is_starred, past_companies, education, themes, relevance_score, recent_development_summary, notes, last_verified, last_contacted_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """, (
                 nc["id"], nc["tenant_id"], nc["name"], nc["current_title"], nc["current_company"], nc["current_company_ticker"],
                 nc["relationship_strength"], nc["is_starred"], json.dumps(nc["past_companies"]),
                 json.dumps(nc["education"]), json.dumps(nc["themes"]), nc["relevance_score"],
-                nc["recent_development_summary"], nc["notes"], nc["last_verified"]
+                nc["recent_development_summary"], nc["notes"], nc["last_verified"], nc.get("last_contacted_date")
             ))
 
         # 12. Seed Corporate Actions

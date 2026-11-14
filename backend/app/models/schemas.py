@@ -63,12 +63,16 @@ class MarketEOD(BaseModel):
 # --- Corporate Announcements & Filings ---
 class HeadlineMetrics(BaseModel):
     revenue_cr: Optional[float] = None
-    ebitda_cr: Optional[float] = None
-    ebitda_margin_pct: Optional[float] = None
-    pbt_cr: Optional[float] = None
-    pat_cr: Optional[float] = None
     revenue_qoq_pct: Optional[float] = None
     revenue_yoy_pct: Optional[float] = None
+    ebitda_cr: Optional[float] = None
+    ebitda_margin_pct: Optional[float] = None
+    ebitda_qoq_pct: Optional[float] = None
+    ebitda_yoy_pct: Optional[float] = None
+    pbt_cr: Optional[float] = None
+    pbt_qoq_pct: Optional[float] = None
+    pbt_yoy_pct: Optional[float] = None
+    pat_cr: Optional[float] = None
     pat_qoq_pct: Optional[float] = None
     pat_yoy_pct: Optional[float] = None
 
@@ -169,6 +173,9 @@ class NetworkContact(BaseModel):
     relevance_score: float = 0.0
     recent_development_summary: Optional[str] = None
     notes: Optional[str] = None
+    last_contacted_date: Optional[str] = None
+    compliance_restricted: bool = False
+    compliance_reason: Optional[str] = None
 
 class SecondDegreePath(BaseModel):
     target_person: str

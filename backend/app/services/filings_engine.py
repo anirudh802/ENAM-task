@@ -214,10 +214,23 @@ class FilingsEngine:
         Separates high-materiality filings (score >= 8) from collapsed routine paperwork.
         Applies de-duplication across exchanges (P-02).
         """
-        cutoff_time = (datetime.now() - timedelta(hours=hours)).isoformat()
-
         with get_db() as conn:
             cursor = conn.cursor()
+            # Dynamic reference anchoring: if live clock has advanced past mock session date,
+            # anchor to MAX(filing_time) so the 24h window showcases active trading day disclosures.
+            cursor.execute("SELECT MAX(filing_time) as max_time FROM announcements;")
+            max_r = cursor.fetchone()
+            ref_time = datetime.now()
+            if max_r and max_r["max_time"]:
+                try:
+                    max_dt = datetime.fromisoformat(max_r["max_time"])
+                    if max_dt > ref_time or (ref_time - max_dt).total_seconds() > 86400:
+                        ref_time = max_dt + timedelta(minutes=30)
+                except Exception:
+                    pass
+
+            cutoff_time = (ref_time - timedelta(hours=hours)).isoformat()
+
             query = """
             SELECT a.id, a.isin, a.ticker, c.name as company_name, a.category, a.title, a.description,
                    a.filing_time, a.materiality_score, a.content_hash, a.financial_basis,
