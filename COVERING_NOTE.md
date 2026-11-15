@@ -3,7 +3,9 @@
 **To:** assessment@enam.com  
 **Subject:** IIT Kanpur – Founding AI Engineer - 2027  
 **Candidate:** Anirudh (`anirudh802` / `basalt802@gmail.com`)  
-**Product:** FINN — Financial Investment Agent (PWA)
+**Product:** FINN — Financial Investment Agent (PWA)  
+**Live Deployed App (HTTPS):** [https://finn-frontend-lac.vercel.app](https://finn-frontend-lac.vercel.app)  
+**GitHub Repository:** [https://github.com/anirudh802/ENAM-task](https://github.com/anirudh802/ENAM-task)  
 
 ---
 
@@ -21,49 +23,70 @@ FINN is a mobile-first, installable Progressive Web Application (PWA) engineered
    - **Volatility-Normalized Z-Scores:** Daily returns evaluated against a 60-day historical baseline ($\mu, \sigma$).
    - **Alert-Fatigue Controls:** 6-hour duplicate cooldowns and a daily cap (max 3 alerts/ticker/day).
 2. **DeepDive (Grounded Primary Research):**
-   - Strictly grounded in primary sources (audited annual reports, quarterly concall transcripts, exchange filings). No broker notes, no secondary news slop.
-   - **Golden-Set Faithfulness Verification:** Every extracted claim and quote is validated against stored primary text (`CitationVerifier`). Fake or hallucinated quotes fail verification and are dropped.
+   - Strictly grounded in primary sources (audited annual reports, quarterly concall transcripts, exchange filings). No broker notes, no secondary news.
+   - **Faithfulness Verification:** Extracted claims and quotes are validated against stored primary text using `CitationVerifier` on a golden set of 3 primary claims. Hallucinated quotes fail verification and are rejected.
    - **Guidance Schema v2 (Promised vs. Delivered):** Multi-quarter tracking comparing management forward guidance against audited delivered actuals with deterministic status rules (`RANGE`, `NUMERIC`, `QUALITATIVE` -> `BEAT`, `MET`, `MISSED`).
    - **Bank & NBFC Specialized Template:** Dedicated financial metrics for BFSI (Net Interest Income, Net Interest Margin in bps, Gross NPA %, Net NPA %, Provision Coverage Ratio, Liquidity Coverage Ratio).
    - **Cash Quality Evaluation:** Operating cash flow vs. accounting PAT ($\text{CFO} / \text{PAT}$ cash conversion ratio), free cash flow, and working capital cycles.
-   - **Cold-Ticker Coverage Assessment:** Ingestion pipeline reporting document coverage percentage before diligence runs.
+   - **Cold-Ticker Coverage Assessment:** Ingestion pipeline reporting document coverage percentage before diligence runs (e.g., `25% Coverage • 0 of 4 transcripts, annual report found` on unindexed tickers like `MARUTI.NS`).
+   - **Honest Empty State:** Returns explicit `"No primary filings indexed yet"` and `"No guidance extracted for this company"` rather than synthesized placeholders.
    - **SEBI Research Analyst Notice:** Institutional disclaimer displayed prominently on generated diligence.
 3. **Nexus (Network Intelligence Layer):**
    - Integrates the investor's private network directly into market events with tenant boundary isolation.
    - **Documented Relevance Score Formula:**
      $$\text{Relevance} = (\text{Tenure} \times 0.25) + (\text{Seniority} \times 0.25) + (\text{Relationship Strength} \times 0.25) + (\text{Event Materiality} \times 0.25) + \text{Starred Boost (+2.0)}$$
-   - **"Who to Call":** Surfaces direct former employees, competitor contacts, and supplier contacts with targeted questions.
-   - **SEBI MNPI Guardrails:** Distinguishes current employees (flagged with `CURRENT_INSIDER` caution banners under SEBI PIT Regulations) from former employees (`FORMER_EMPLOYEE_SAFE`). Restricted list checking blocks calling suggestions on active mandates.
-   - **Scuttlebutt Audit Log:** Persists an audit trail of scuttlebutt calls certifying non-MNPI compliance.
-   - **Contact Import & Staleness:** CSV/vCard contact import with automated staleness detection (> 180 days).
-   - **DPDP Act Controls:** Data Portability export and Right to Erasure deletion.
+   - **"Who to Call":** Surfaces direct former employees, competitor contacts, and supplier contacts with targeted scuttlebutt questions.
+   - **SEBI PIT Guardrails:** Distinguishes current employees (flagged with `CURRENT_INSIDER` caution banners under SEBI PIT Regulations) from former employees (`FORMER_EMPLOYEE_SAFE`). Firm-wide restricted list embargoes (e.g., Dixon Technologies embargoed until 18 Nov 2026 due to active mandates) actively disable calling buttons across Ask, Nexus, and Who-to-Call.
    - **Second-Degree Reach:** Maps mutual connectors (e.g. IIT Kanpur alumni networks) to target executives with warm introduction asks.
-4. **Interaction Model: Omnipresent Ask Intelligence (Phase 4):**
+4. **Interaction Model: Omnipresent Ask Intelligence:**
    - Omnipresent command bar docked across all tabs (`Pulse`, `Radar`, `DeepDive`, `Nexus`) answering who/what questions with real FINN cards.
-   - Voice search trigger using the Web Speech API (`SpeechRecognition`) with visual audio pulse indicator and graceful fallback.
    - Horizontal-scrolling quick prompt chips (`👥 Who knows Dixon order flow?`, `📊 Trent promised vs delivered`, `👥 Who do I know at Kaynes?`, `📋 Dixon Q2 results`, `⚡ CDSL volume anomaly`).
    - Interactive slide-up drawer displaying intent badges (`NETWORK INTEL`, `GUIDANCE TRACK RECORD`, `RESULTS DISCLOSURE`, `ANOMALY DETECTION`), institutional verdict summaries, embedded FINN cards (with SEBI compliance locks or one-click call triggers), and deep-navigation links.
    - Company-grouped anomaly cards in Radar (e.g. CDSL volume surge 4.2x + price breakout +8.4% merged into one unified card).
    - 16-company mock portfolio strip in DeepDive with visible violet network indicators on tickers with active network ties (`DIXON`, `TRENT`, `KAYNES`, `DEEPAKNTR`).
-   - Quarantined empty state for unindexed tickers (`Parse Quality < 0.60` / `Insufficient Coverage`).
 5. **Beacon (Native Web Push Notifications):**
    - Uses the Web Push protocol (VAPID) and Service Workers to dispatch OS-level system notifications on physical phones and desktops when critical anomalies occur in the background.
-   - **Privacy Mode:** User setting to mask ticker and figures on lock screens (`"Critical alert detected for your portfolio"`).
-   - Automatic cleanup of expired (410 Gone) subscriptions.
+   - Header notification bell displays active subscription state.
 6. **Ergonomics & Themes:**
    - Full support for **Dark Mode** and **Light Mode** with zero-transition rendering.
-   - Built-in toggleable Phone Simulator Frame for desktop reviewers and seamless full-screen mobile layout (usable at 375px viewport without sideways scroll).
+   - Usable at 375px mobile viewport without sideways scroll.
+
+---
+
+## "Live vs. Seeded" Data Disclosure
+
+To ensure complete transparency regarding data origins:
+- **Live Market Data:** End-of-Day pricing, 60-day moving averages, and volume multiples are pulled live via `yfinance`.
+- **Seeded Primary Disclosures:** Corporate announcements, quarterly results, and concall transcripts for tracked portfolio tickers are seeded from primary exchange filings (labeled in the UI as *"Seeded demo filing"* where demonstration data is used).
+- **Synthetic Network Graph:** Contact profiles and relationships are synthetic mock data designed around DPDP and SEBI PIT principles with strict multi-tenant isolation.
+
+---
+
+## Feature Implementation Status & Demonstration
+
+| Feature | Status | Verification & Evidence |
+| :--- | :--- | :--- |
+| **SEBI LODR Classification (17 Categories)** | ✅ Fully Implemented | Unit tested in `test_filings_classification.py` + Live in Pulse view |
+| **Corporate Action Split Adjustment** | ✅ Fully Implemented | Unit tested in `test_anomaly_hardening.py` |
+| **Promised vs Delivered (Guidance v2)** | ✅ Fully Implemented | Evaluated in `test_metrics_calculator.py` + Live in DeepDive |
+| **Dixon Restricted List Compliance Embargo** | ✅ Fully Implemented | Re-screenshotted in Ask, Nexus, and Who-to-Call modal |
+| **Cold-Ticker Coverage % Readout** | ✅ Fully Implemented | Tested on `MARUTI.NS` (25% coverage displayed in UI) |
+| **Voice Search (SpeechRecognition)** | ⚙️ Implemented, not shown | Web Speech API integrated in `AskBar.tsx` (browser-dependent) |
+| **Contact CSV Import & Staleness** | ⚙️ Implemented, not shown | Backend engine in `network_engine.py` (tested in `test_nexus_intelligence.py`) |
+| **DPDP Export & Erasure** | ⚙️ Implemented, not shown | Endpoints in `network_engine.py` (tested in `test_nexus_intelligence.py`) |
+| **Scuttlebutt Call Audit Log** | ⚙️ Implemented, not shown | Backend persistence in `network_engine.py` (tested in `test_nexus_intelligence.py`) |
+| **OS Push Notification Trigger** | ⚙️ Implemented, not shown | Active green bell in UI; VAPID outbox pipeline in `push_service.py` |
 
 ---
 
 ## Verification & Test Results
 
-The backend test suite contains **69 automated unit and integration tests** achieving a **100% pass rate**:
+The backend test suite contains **72 automated unit and integration tests** achieving a **100% pass rate in 8.74 seconds**:
 
 ```
 tests/test_anomaly_hardening.py        5 passed (100%)
 tests/test_api.py                      7 passed (100%)
-tests/test_ask_service.py              5 passed (100%)  <-- Phase 4 Ask Engine
+tests/test_ask_service.py              7 passed (100%)  <-- Phase 4 Ask Engine & Zero-Guidance Guard
 tests/test_citation_verifier.py        4 passed (100%)
 tests/test_cold_ticker_research.py     3 passed (100%)  <-- Cold Ticker Generalization
 tests/test_document_pipeline.py        4 passed (100%)
@@ -71,41 +94,32 @@ tests/test_filings_classification.py   4 passed (100%)
 tests/test_financial_units.py          2 passed (100%)
 tests/test_golden_claims.py            3 passed (100%)  <-- Phase 1 Exit Gate
 tests/test_metrics_calculator.py       7 passed (100%)
-tests/test_nexus_intelligence.py       6 passed (100%)  <-- Phase 3 Exit Gate
+tests/test_nexus_intelligence.py       6 passed (100%)  <-- Phase 3 Exit Gate & Compliance Embargo
 tests/test_production_desk.py          9 passed (100%)  <-- Direct Ingestion, XBRL, Outbox, Backup
 tests/test_services.py                 7 passed (100%)
 tests/test_tenant_isolation.py         2 passed (100%)  <-- Phase 0 Exit Gate
 tests/test_user_alert_state.py         1 passed (100%)
-============================= 69 passed in 4.31s ==============================
+============================= 72 passed in 8.74s ==============================
+```
+
+Frontend production build verification:
+```bash
+cd frontend && npm run build
+# ✓ built in 1.83s (0 errors, 0 warnings)
 ```
 
 ---
 
-## Key Decisions, Trade-offs & What Was Deliberately Left Out
-
-To maximize signal density and deliver institutional reliability within the challenge timeframe, several conscious engineering trade-offs were made:
+## Key Decisions & Engineering Trade-offs
 
 1. **EOD Market Data vs. Tick-by-Tick Streaming:**  
    We deliberately used End-of-Day (EOD) closing prices and volume multiples (`yfinance` + 60-day historical baseline) rather than maintaining paid WebSocket tick feeds. For high-conviction fundamental investors running 3–5 year horizons, intraday micro-tick oscillations generate alert fatigue; EOD volume multiples (e.g. 4.8x 20-day SMA) isolate genuine institutional positioning.
 2. **Curated & Compliant CSV Graph Ingestion vs. Headless LinkedIn Scraping:**  
-   LinkedIn strictly prohibits automated scraping under its Terms of Service and aggressively serves Cloudflare/CAPTCHA challenges. Rather than relying on fragile, legally questionable scrapers, we built a SEBI/DPDP-compliant CSV/vCard contact ingestion engine with verified alumni/company bridges (and documented how production enterprise deployments connect to Affinity CRM or Microsoft Graph via authorized OAuth).
+   LinkedIn strictly prohibits automated scraping under its Terms of Service and serves Cloudflare/CAPTCHA challenges. Rather than relying on fragile scrapers, we designed contact ingestion around SEBI PIT and DPDP principles with verified alumni/company bridges (and documented how production enterprise deployments connect to Affinity CRM or Microsoft Graph via authorized OAuth).
 3. **SQLite WAL Single-Node Engine vs. Distributed Postgres + Neo4j:**  
-   For a boutique high-conviction investment office managing 15–50 core portfolio companies and <10,000 professional contacts, SQLite in WAL mode combined with an in-memory `NetworkX` graph engine executes sub-5ms path traversals with zero operational overhead, no network serialization cost, and instant single-file encrypted tenant backups (`tenant_01.db`).
+   For a boutique high-conviction investment office managing 15–50 core portfolio companies and <10,000 professional contacts, SQLite in WAL mode combined with an in-memory `NetworkX` graph engine executes <5ms path traversals on the 20-node benchmark graph with zero operational overhead, no network serialization cost, and instant single-file encrypted tenant backups.
 4. **Deep Single-Company Primary Grounding vs. Shallow Peer Comparison Grids:**  
    We prioritized exhaustive, citation-verified multi-quarter tracking (`Promised vs. Delivered` across 4 quarters with verbatim page/speaker citations) for individual companies over broad, superficial cross-sector comparison tables. In high-conviction investing, forensic depth on capital allocation beats broad surface-level metrics.
-
----
-
-## Where We Would Take FINN Next (Production Roadmap)
-
-1. **Automated BSE/NSE RSS & XBRL Poller + Table OCR:**  
-   Direct socket connection to exchange disclosure feeds to ingest PDF/XBRL filings within 60 seconds of publication, coupled with `pdfplumber`/`marker` table extraction pipelines for balance sheet schedules.
-2. **Passive Workspace Graph Sync (Zero-Effort Network Updates):**  
-   Read-only integration with Google Workspace and Microsoft 365 (calendar invites and email headers) to continuously refresh contact interaction dates (`last_verified_at`) and uncover warm firm-wide introduction paths without requiring manual CSV uploads.
-3. **Audio Earnings Call Ingestion & Tone Shift Detection:**  
-   Streaming concall audio ingestion via Whisper / Gemini Multimodal to flag executive hesitation, evasive Q&A tone, and voice stress before official transcripts are released to the public.
-4. **Cross-Portfolio Supply-Chain Contagion Alerts:**  
-   Activating the `Nexus` supplier/customer dependency graph so that if a major vendor (e.g. `KAYNES.NS` or a display component supplier) reports factory downtime or capex deferral, an automatic portfolio impact advisory is dispatched to investors holding the OEM (`DIXON.NS`).
 
 ---
 
@@ -127,12 +141,15 @@ All foundational architectural decisions and technical specifications are formal
 ## How to Run & Verify
 
 ```bash
-# One-line launcher (Starts backend on :8000 and frontend Vite dev on :5173)
+# 1. Live Deployment
+# Frontend: https://finn-frontend-lac.vercel.app
+
+# 2. Local Development One-Line Launcher
 ./run.sh
 
-# Run backend test suite
+# 3. Backend Test Suite (All 72 tests)
 cd backend && ./venv/bin/pytest -v
 
-# Run production frontend build
+# 4. Production Frontend Build
 cd frontend && npm run build
 ```
