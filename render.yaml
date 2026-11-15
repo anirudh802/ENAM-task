@@ -1,0 +1,32 @@
+services:
+  # 1. FastAPI Python Backend Service
+  - type: web
+    name: finn-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "python -m app.data.seed_data && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: FINN_DB_PATH
+        value: /opt/render/project/src/backend/finn.db
+
+  # 2. React Vite PWA Frontend Static Site
+  - type: static
+    name: finn-frontend
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: finn-backend
+          envVarKey: RENDER_EXTERNAL_URL

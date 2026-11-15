@@ -10,7 +10,8 @@ import {
   AskResponse,
 } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '/api').trim().replace(/\/+$/, '');
+const API_BASE = rawApiBase.endsWith('/api') ? rawApiBase : `${rawApiBase}/api`;
 
 export const api = {
   // Health
