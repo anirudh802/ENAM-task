@@ -301,6 +301,7 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
               {/* Close Button (min 44px touch target) */}
               <button
                 onClick={handleClose}
+                aria-label="Close drawer"
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
@@ -409,7 +410,7 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
 
                             {(!card.data.guidance_items || card.data.guidance_items.length === 0) ? (
                               <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
-                                No guidance extracted yet
+                                No guidance extracted for this company
                               </div>
                             ) : (
                               <div className="space-y-2 mb-1">
@@ -536,18 +537,6 @@ export const AskBar: React.FC<AskBarProps> = ({ onNavigateTab, onCallContact }) 
                                   <span>{b}</span>
                                 </div>
                               ))}
-                            </div>
-
-                            <div className="flex justify-end pt-1">
-                              <ActionButton
-                                variant="ghost"
-                                icon={ArrowUpRight}
-                                label="DeepDive"
-                                onClick={() => {
-                                  onNavigateTab('deepdive', card.data.ticker);
-                                  handleClose();
-                                }}
-                              />
                             </div>
                           </div>
                         )}

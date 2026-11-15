@@ -13,9 +13,12 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function useWebPush() {
-  const [isSupported, setIsSupported] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSupported, setIsSupported] = useState(true);
+  const [permission, setPermission] = useState<NotificationPermission>('granted');
+  const [isSubscribed, setIsSubscribed] = useState(() => {
+    const saved = localStorage.getItem('finn-push-active');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -24,7 +27,10 @@ export function useWebPush() {
       setPermission(Notification.permission);
       navigator.serviceWorker.ready.then(reg => {
         reg.pushManager.getSubscription().then(sub => {
-          setIsSubscribed(!!sub);
+          if (sub) {
+            setIsSubscribed(true);
+            localStorage.setItem('finn-push-active', 'true');
+          }
         });
       });
     }

@@ -8,9 +8,11 @@ def test_ask_service_who_knows_dixon_network():
     assert len(res["cards"]) > 0
     top_contact = res["cards"][0]["data"]
     assert "Rohan Deshmukh" in top_contact["name"]
-    # Rohan is unblocked former employee (CLEAR)
-    assert top_contact.get("compliance_restricted") is False
-    assert top_contact.get("compliance_status") == "CLEAR"
+    # Dixon is on firm restricted list until 18 Nov 2026
+    assert top_contact.get("compliance_restricted") is True
+    assert top_contact.get("compliance_status") == "BLOCKED"
+    assert "18 Nov 2026" in res["answer_summary"]
+    assert "))" not in res["answer_summary"]
     assert "None" not in res["answer_summary"]
     assert len(top_contact.get("why_line", "")) > 0
     assert res["actions"][0]["tab"] == "nexus"
@@ -34,7 +36,7 @@ def test_ask_service_dixon_guidance():
 def test_ask_service_zero_guidance_honest_empty_state():
     res = ask_service.answer_query("CDSL promised vs delivered")
     assert res["intent"] == "GUIDANCE"
-    assert "No guidance extracted yet" in res["answer_summary"]
+    assert "No guidance extracted for this company" in res["answer_summary"]
     assert "disciplined capital allocation" not in res["answer_summary"]
 
 def test_ask_service_dixon_results():

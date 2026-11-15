@@ -346,10 +346,11 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
             {/* Cold Ticker / Ingest Coverage Indicator (D-08) */}
             {research.coverage_assessment && (
               <div className="mb-2.5 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span className="text-slate-600 dark:text-slate-300 flex items-center gap-1">
                   <Database className="w-3 h-3 text-blue-500" /> Primary Disclosures Ingested:
                 </span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {research.coverage_assessment.coverage_pct != null ? `${research.coverage_assessment.coverage_pct}% Coverage • ` : ''}
                   {concallsAvailable} Concall{concallsAvailable === 1 ? '' : 's'} • 1 Annual Report • {regulatoryFilingsCount} SEBI Filings
                 </span>
               </div>
@@ -481,7 +482,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
               <div className="flex items-center justify-between">
                 <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 text-xs">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  Partial Primary Coverage · {research.coverage_line || `${research.coverage_assessment?.breakdown?.concall_transcripts_available ?? 0} of 4 transcripts found`}
+                  Partial Primary Coverage ({research.coverage_assessment?.coverage_pct != null ? `${research.coverage_assessment.coverage_pct}%` : '25%'}) · {research.coverage_line || `${research.coverage_assessment?.breakdown?.concall_transcripts_available ?? 0} of 4 transcripts found`}
                 </span>
                 <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 shrink-0">
                   Partial Data Grounded
@@ -499,7 +500,7 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
                   </span>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+              <p className="text-[10px] text-slate-600 dark:text-slate-300 italic">
                 Showing verified financial and operational fundamentals. Primary concall transcripts and guidance tracking will index upon exchange disclosure.
               </p>
             </div>
@@ -1086,14 +1087,14 @@ export const DeepDiveView: React.FC<DeepDiveViewProps> = ({
           </div>
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-              Primary Disclosures Missing · {ticker}
+              No Primary Filings Indexed Yet · {ticker}
             </h3>
-            <p className="text-[11px] text-slate-600 dark:text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
+            <p className="text-[11px] text-slate-700 dark:text-slate-300 max-w-sm mx-auto mt-1 leading-relaxed">
               No verified Regulation 30/33 XBRL disclosures or official concall transcripts are indexed for <span className="font-mono font-semibold text-slate-900 dark:text-white">{ticker}</span>.
             </p>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[10px] text-slate-500 font-mono max-w-sm mx-auto text-left space-y-1">
-            <div className="font-bold text-slate-700 dark:text-slate-300">● Strict Grounding Policy:</div>
+          <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[10px] text-slate-700 dark:text-slate-300 font-mono max-w-sm mx-auto text-left space-y-1">
+            <div className="font-bold text-slate-900 dark:text-white">● Strict Grounding Policy:</div>
             <div>• Primary exchange XBRL required for deterministic financials</div>
             <div>• Zero external web guessing or unverified estimates</div>
             <div>• Full concall transcripts indexed upon verified publication</div>

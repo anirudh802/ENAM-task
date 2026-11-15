@@ -132,13 +132,18 @@ class AskService:
                 summary = f"All network contacts for {target_ticker} are currently blocked under active SEBI MNPI embargo until {block_date}."
             elif enhanced_contacts:
                 top_contact = enhanced_contacts[0]
-                role_desc = top_contact.get("current_title", "Executive")
+                role_desc = top_contact.get("current_title", "Executive").strip()
                 curr_comp = top_contact.get("current_company", "")
                 if curr_comp and curr_comp.lower() not in role_desc.lower():
                     role_desc = f"{role_desc} at {curr_comp}"
                 why_text = top_contact.get("why_line") or top_contact.get("notes") or ""
+                # Avoid double parenthesis if role ends with a paren e.g. Tech (2018–21)
+                if role_desc.endswith(")"):
+                    role_str = f" — {role_desc} — "
+                else:
+                    role_str = f" ({role_desc}) "
                 summary = (
-                    f"{top_contact['name']} ({role_desc}) "
+                    f"{top_contact['name']}{role_str}"
                     f"is your primary contact for {target_ticker} (Relevance {top_contact.get('relevance_score', 9.0)}/10). "
                     f"{why_text}"
                 ).strip()
@@ -175,7 +180,7 @@ class AskService:
             total = len(guidance_items)
 
             if total == 0:
-                summary = f"{research.get('company_name', target_ticker)}: No guidance extracted yet."
+                summary = f"{research.get('company_name', target_ticker)}: No guidance extracted for this company."
             else:
                 beats = sum(1 for g in guidance_items if g.get("status") == "BEAT")
                 met = sum(1 for g in guidance_items if g.get("status") == "MET")

@@ -333,7 +333,7 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
                   <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                     <span className="flex items-center gap-1">
                       <FileText className="w-3 h-3 text-slate-400" />
-                      {filing.category === 'results' && filing.headline_metrics ? 'Reg 33 XBRL Grounded · Primary Disclosure' : 'Seeded demo data'}
+                      Seeded demo filing
                     </span>
                     <span>Consolidated</span>
                   </div>
@@ -381,14 +381,22 @@ export const WindowedDigest: React.FC<WindowedDigestProps> = ({
                       </span>
                     </div>
                     {onCallContact && (
-                      <ActionButton
-                        variant="icon"
-                        icon={Phone}
-                        label="Channel check"
-                        title={`Channel check: ${filing.network_connection.connected_person_name}`}
-                        aria-label={`Channel check outreach to ${filing.network_connection.connected_person_name}`}
-                        onClick={() => onCallContact(filing.network_connection!.connected_person_name)}
-                      />
+                      filing.network_connection.is_blocked || filing.network_connection.compliance_status === 'BLOCKED' ? (
+                        <ActionButton
+                          disabled
+                          disabledReason={filing.network_connection.compliance?.reason || 'Restricted List: Active mandate embargo until 18 Nov 2026'}
+                          label="Blocked"
+                        />
+                      ) : (
+                        <ActionButton
+                          variant="icon"
+                          icon={Phone}
+                          label="Channel check"
+                          title={`Channel check: ${filing.network_connection.connected_person_name}`}
+                          aria-label={`Channel check outreach to ${filing.network_connection.connected_person_name}`}
+                          onClick={() => onCallContact(filing.network_connection!.connected_person_name)}
+                        />
+                      )
                     )}
                   </div>
                   {filing.network_connection.why_line && (

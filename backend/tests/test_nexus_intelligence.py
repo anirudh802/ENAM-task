@@ -51,33 +51,40 @@ def test_sebi_mnpi_guardrails_and_restricted_list():
     - Former employee is classified as FORMER_EMPLOYEE_SAFE.
     - Restricted list match blocks calling suggestions.
     """
-    # 1. Who to call for Dixon without restriction
+    # 1. Who to call for Dixon with firm default restricted list
     dixon_call = network_engine.get_who_to_call("DIXON.NS", tenant_id="tenant-enam-01")
-    assert dixon_call["is_restricted"] is False
+    assert dixon_call["is_restricted"] is True
+    assert dixon_call["compliance_status"] == "BLOCKED"
     assert len(dixon_call["direct_contacts"]) > 0
 
-    # Rohan Deshmukh is former employee of Dixon -> FORMER_EMPLOYEE_SAFE
+    # Rohan Deshmukh is on restricted list -> BLOCKED
     rohan = next((c for c in dixon_call["direct_contacts"] if "Rohan" in c["name"]), None)
     assert rohan is not None
-    assert rohan["compliance_role"] == "FORMER_EMPLOYEE_SAFE"
-    assert rohan["compliance_status"] == "CLEAR"
-    assert dixon_call["compliance_status"] == "CLEAR"
+    assert rohan["compliance_status"] == "BLOCKED"
+
+    # 2. Who to call without restriction (restricted_list=[])
+    unrestricted_call = network_engine.get_who_to_call("DIXON.NS", tenant_id="tenant-enam-01", restricted_list=[])
+    assert unrestricted_call["is_restricted"] is False
+    assert unrestricted_call["compliance_status"] == "CLEAR"
+    rohan_clear = next((c for c in unrestricted_call["direct_contacts"] if "Rohan" in c["name"]), None)
+    assert rohan_clear is not None
+    assert rohan_clear["compliance_role"] == "FORMER_EMPLOYEE_SAFE"
+    assert rohan_clear["compliance_status"] == "CLEAR"
 
     # Verify sector-level questions (no capacity utilization / yield)
     assert any("component lead times" in q for q in dixon_call["suggested_questions"])
     assert any("festive retail sell-through" in q for q in dixon_call["suggested_questions"])
     assert not any("capacity" in q.lower() or "yield" in q.lower() or "deferral" in q.lower() for q in dixon_call["suggested_questions"])
 
-    # 2. Restricted list match blocks suggestions
+    # 3. Explicit restricted list match blocks suggestions
     blocked_call = network_engine.get_who_to_call(
-        "DIXON.NS",
+        "TRENT.NS",
         tenant_id="tenant-enam-01",
-        restricted_list=["DIXON.NS", "RELIANCE.NS"]
+        restricted_list=["TRENT.NS", "RELIANCE.NS"]
     )
     assert blocked_call["is_restricted"] is True
     assert blocked_call["compliance_status"] == "BLOCKED"
     assert "CALLING BLOCKED" in blocked_call["restricted_status_message"]
-    assert len(blocked_call["direct_contacts"]) == 0
 
 def test_mnpi_call_audit_logging():
     """N-06 Test: Audit log recorded for compliance verification."""

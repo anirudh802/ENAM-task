@@ -82,6 +82,15 @@ export interface Filing {
     degree_of_separation: number;
     context: string;
     why_line?: string;
+    is_blocked?: boolean;
+    compliance_status?: string;
+    compliance?: {
+      status?: string;
+      is_blocked?: boolean;
+      label?: string;
+      reason?: string;
+      block_ends?: string | null;
+    } | null;
   } | null;
 }
 
@@ -237,6 +246,9 @@ export interface NetworkContact {
   last_contacted_date?: string | null;
   compliance_restricted?: boolean;
   compliance_reason?: string | null;
+  compliance_status?: string;
+  is_blocked?: boolean;
+  compliance?: Record<string, any>;
 }
 
 export interface WhoToCallResponse {

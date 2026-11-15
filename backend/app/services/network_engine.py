@@ -132,6 +132,8 @@ class NetworkEngine:
     def invalidate_tenant_graph(self, tenant_id: str = DEFAULT_TENANT_ID):
         self._tenant_graphs.pop(tenant_id, None)
 
+    DEFAULT_RESTRICTED_LIST = ["DIXON.NS"]
+
     @staticmethod
     def compliance_status(contact: Dict[str, Any], company_ticker: Optional[str] = None, restricted_list: Optional[List[str]] = None) -> Dict[str, Any]:
         """
@@ -139,7 +141,8 @@ class NetworkEngine:
         Returns a clear result: status ('CLEAR' | 'BLOCKED' | 'CAUTION'), is_blocked, label, reason, block_ends.
         """
         target = (company_ticker or contact.get("current_company_ticker") or "").upper().strip()
-        restr_set = set(t.upper().strip() for t in (restricted_list or []))
+        effective_restr = NetworkEngine.DEFAULT_RESTRICTED_LIST if restricted_list is None else restricted_list
+        restr_set = set(t.upper().strip() for t in effective_restr)
 
         # 1. Company on explicit firm restricted list
         if target and (target in restr_set or target.replace(".NS", "") in restr_set):
@@ -286,7 +289,8 @@ class NetworkEngine:
         Categorizes contacts into CURRENT_INSIDER (caution), FORMER_EMPLOYEE (safe), and EXPERT.
         """
         ticker_clean = ticker.upper().strip()
-        restricted_set = set(restricted_list or [])
+        effective_restr = self.DEFAULT_RESTRICTED_LIST if restricted_list is None else restricted_list
+        restricted_set = set(t.upper().strip() for t in effective_restr)
 
         # Check Restricted List (SEBI PIT Rule)
         is_restricted = ticker_clean in restricted_set or ticker_clean.replace(".NS", "") in restricted_set
@@ -383,7 +387,7 @@ class NetworkEngine:
             overall_comp_label = "CURRENT INSIDER CAUTION"
         else:
             overall_comp_status = "CLEAR"
-            overall_comp_label = "SEBI PIT COMPLIANT"
+            overall_comp_label = "Scuttlebutt-safe questions"
 
         return {
             "ticker": ticker_clean,
@@ -392,8 +396,8 @@ class NetworkEngine:
             "is_restricted": is_restricted,
             "compliance_status": overall_comp_status,
             "compliance_label": overall_comp_label,
-            "restricted_status_message": "CALLING BLOCKED: Company is on ENAM restricted list due to active mandates" if is_restricted else "Compliant",
-            "direct_contacts": direct_contacts if not is_restricted else [],
+            "restricted_status_message": "CALLING BLOCKED: Company is on ENAM restricted list due to active mandates until 18 Nov 2026" if is_restricted else "Compliant",
+            "direct_contacts": direct_contacts,
             "competitor_contacts": competitor_contacts[:3],
             "supplier_contacts": supplier_contacts[:3],
             "suggested_questions": suggested_questions

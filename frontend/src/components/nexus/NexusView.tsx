@@ -306,7 +306,7 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 Last Contact: 14 Aug 2026 (92d ago)
               </p>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mt-1">
-                Ex-Head of Zudio Merchandising at Trent. Her former employer <strong>Trent Ltd</strong> disclosed Q2 results today (+39.1% YoY revenue growth, crossing 570 stores). Recommended hook: retail replenishment velocity and tier 2/3 apparel demand.
+                Ex-Head of Zudio Merchandising at Trent. Her former employer <strong>Trent Ltd</strong> disclosed Q2 results on 13 Nov (+39.1% YoY revenue growth, crossing 570 stores). Recommended hook: retail replenishment velocity and tier 2/3 apparel demand.
               </p>
             </div>
           </div>
@@ -314,17 +314,13 @@ export const NexusView: React.FC<NexusViewProps> = ({
           {/* Notice 2: Client Sourcing Intel (Rohan Deshmukh / Dixon) */}
           <div className="p-3 rounded-lg bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono flex items-center gap-1 border border-blue-200 dark:border-blue-800/40 shrink-0">
-                <Users className="w-3 h-3" /> Key Client Channel Check
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono flex items-center gap-1 border border-amber-200 dark:border-amber-800/40 shrink-0">
+                <Lock className="w-3 h-3 text-amber-600" /> BLOCKED · RESTRICTED LIST
               </span>
               <ActionButton
-                variant="primary"
-                icon={Phone}
-                label="Channel check"
-                onClick={() => {
-                  setSelectedTicker('DIXON.NS');
-                  fetchWhoToCall('DIXON.NS');
-                }}
+                disabled
+                disabledReason="Restricted List: Active mandate embargo until 18 Nov 2026"
+                label="Blocked"
               />
             </div>
             <div>
@@ -600,6 +596,14 @@ export const NexusView: React.FC<NexusViewProps> = ({
               </button>
             </div>
 
+            {/* Restricted Banner if firm embargo active */}
+            {whoToCallData.is_restricted && (
+              <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="font-semibold">{whoToCallData.restricted_status_message}</span>
+              </div>
+            )}
+
             {/* Direct Contacts */}
             <div>
               <h4 className="text-xs font-bold uppercase text-slate-400 mb-1.5 font-mono">
@@ -613,11 +617,27 @@ export const NexusView: React.FC<NexusViewProps> = ({
                     key={dc.id}
                     className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 mb-1.5 text-xs border border-slate-200/50 dark:border-slate-700/50"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 dark:text-white">{dc.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold font-mono border border-slate-200 dark:border-slate-700">
-                        Synthetic
-                      </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white truncate">{dc.name}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold font-mono border border-slate-200 dark:border-slate-700 shrink-0">
+                          In your network
+                        </span>
+                      </div>
+                      {whoToCallData.is_restricted || dc.compliance_restricted || dc.compliance_status === 'BLOCKED' ? (
+                        <ActionButton
+                          disabled
+                          disabledReason={dc.compliance_reason || whoToCallData.restricted_status_message || 'Restricted List: Active mandate embargo until 18 Nov 2026'}
+                          label="Blocked"
+                        />
+                      ) : (
+                        <ActionButton
+                          variant="primary"
+                          icon={Phone}
+                          label="Channel check"
+                          onClick={() => onCallContact?.(dc.name)}
+                        />
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-600 dark:text-slate-300">
                       {dc.name === 'Rohan Deshmukh'
@@ -664,9 +684,13 @@ export const NexusView: React.FC<NexusViewProps> = ({
                 <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
                   Diligence Questions (Channel check):
                 </h4>
-                {whoToCallData.compliance_status === 'CLEAR' && (
+                {whoToCallData.compliance_status === 'CLEAR' ? (
                   <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 font-mono">
-                    SEBI PIT Compliant
+                    Scuttlebutt-safe questions
+                  </span>
+                ) : (
+                  <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-mono flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> Restricted Embargo
                   </span>
                 )}
               </div>
